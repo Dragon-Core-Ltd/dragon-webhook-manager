@@ -6,47 +6,83 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dwm_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
 ?>
 <div class="wrap dwm-wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'Dragon Webhook Manager', 'dragon-webhook-manager' ); ?></h1>
-	<?php if ( $webhook_count < $max_webhooks ) : ?>
+	<?php if ( $dwm_webhook_count < $dwm_max_webhooks ) : ?>
 		<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit' ) ); ?>" class="page-title-action">
 			<?php esc_html_e( 'Add Webhook', 'dragon-webhook-manager' ); ?>
 		</a>
 	<?php endif; ?>
 	<hr class="wp-header-end">
 
+	<?php
+	// Render tabs navigation.
+	$dwm_tabs = apply_filters( 'dwm_admin_tabs', array() );
+	if ( ! empty( $dwm_tabs ) ) :
+		?>
+	<nav class="nav-tab-wrapper dwm-nav-tabs">
+		<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager' ) ); ?>" class="nav-tab nav-tab-active">
+			<?php esc_html_e( 'Webhooks', 'dragon-webhook-manager' ); ?>
+		</a>
+		<?php foreach ( $dwm_tabs as $dwm_tab_id => $dwm_tab_label ) : ?>
+			<a href="<?php echo esc_url( add_query_arg( 'tab', $dwm_tab_id, admin_url( 'tools.php?page=dragon-webhook-manager' ) ) ); ?>" class="nav-tab">
+				<?php echo esc_html( $dwm_tab_label ); ?>
+			</a>
+		<?php endforeach; ?>
+	</nav>
+	<?php endif; ?>
+
 	<!-- Stats Grid -->
 	<div class="dwm-stats-grid">
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $webhook_count ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_webhook_count ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Webhooks', 'dragon-webhook-manager' ); ?></span>
-			<span class="dwm-stat-limit"><?php echo esc_html( sprintf( __( '%d of %d', 'dragon-webhook-manager' ), $webhook_count, $max_webhooks ) ); ?></span>
+			<span class="dwm-stat-limit">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: 1: Current number of webhooks, 2: Maximum number of webhooks allowed. */
+						__( '%1$d of %2$d', 'dragon-webhook-manager' ),
+						$dwm_webhook_count,
+						$dwm_max_webhooks
+					)
+				);
+				?>
+			</span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['today'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['today'] ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Deliveries Today', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['success_rate'] ); ?>%</span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['success_rate'] ); ?>%</span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Success Rate', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['avg_duration'] ); ?>ms</span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['avg_duration'] ); ?>ms</span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Avg Response', 'dragon-webhook-manager' ); ?></span>
 		</div>
 	</div>
 
+	<?php
+	// Only show Pro upsell if Pro is not active and licensed.
+	$dwm_pro_enabled = apply_filters( 'dwm_pro_triggers_enabled', false );
+	if ( ! $dwm_pro_enabled ) :
+		?>
 	<!-- Pro Upsell Notice -->
 	<div class="dwm-pro-notice">
 		<div class="dwm-pro-notice-content">
 			<strong><?php esc_html_e( 'Need WooCommerce webhooks?', 'dragon-webhook-manager' ); ?></strong>
 			<span><?php esc_html_e( 'Upgrade to Pro for 20+ WooCommerce triggers: orders, customers, products, inventory alerts & more.', 'dragon-webhook-manager' ); ?></span>
 		</div>
-		<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro/" target="_blank" class="button button-primary">
+		<a href="https://plugins.dragoncore.ltd/plugins/dragon-webhook-manager-pro/" target="_blank" class="button button-primary">
 			<?php esc_html_e( 'Get Pro', 'dragon-webhook-manager' ); ?>
 		</a>
 	</div>
+	<?php endif; ?>
 
 	<!-- Webhooks Table -->
 	<table class="wp-list-table widefat fixed striped dwm-webhooks-table">
@@ -61,7 +97,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</tr>
 		</thead>
 		<tbody>
-			<?php if ( empty( $webhooks ) ) : ?>
+			<?php if ( empty( $dwm_webhooks ) ) : ?>
 				<tr>
 					<td colspan="6" class="dwm-empty-state">
 						<p><?php esc_html_e( 'No webhooks created yet.', 'dragon-webhook-manager' ); ?></p>
@@ -71,51 +107,51 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</td>
 				</tr>
 			<?php else : ?>
-				<?php foreach ( $webhooks as $webhook ) : ?>
-					<tr data-webhook-id="<?php echo esc_attr( $webhook['id'] ); ?>">
+				<?php foreach ( $dwm_webhooks as $dwm_webhook ) : ?>
+					<tr data-webhook-id="<?php echo esc_attr( $dwm_webhook['id'] ); ?>">
 						<td class="column-status">
 							<button type="button"
-								class="dwm-toggle-status <?php echo $webhook['is_active'] ? 'is-active' : ''; ?>"
-								data-id="<?php echo esc_attr( $webhook['id'] ); ?>"
-								title="<?php echo $webhook['is_active'] ? esc_attr__( 'Active - Click to disable', 'dragon-webhook-manager' ) : esc_attr__( 'Inactive - Click to enable', 'dragon-webhook-manager' ); ?>">
+								class="dwm-toggle-status <?php echo $dwm_webhook['is_active'] ? 'is-active' : ''; ?>"
+								data-id="<?php echo esc_attr( $dwm_webhook['id'] ); ?>"
+								title="<?php echo $dwm_webhook['is_active'] ? esc_attr__( 'Active - Click to disable', 'dragon-webhook-manager' ) : esc_attr__( 'Inactive - Click to enable', 'dragon-webhook-manager' ); ?>">
 								<span class="dwm-status-indicator"></span>
 							</button>
 						</td>
 						<td class="column-name">
 							<strong>
-								<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $webhook['id'] ) ); ?>">
-									<?php echo esc_html( $webhook['name'] ); ?>
+								<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $dwm_webhook['id'] ) ); ?>">
+									<?php echo esc_html( $dwm_webhook['name'] ); ?>
 								</a>
 							</strong>
-							<?php if ( $webhook['description'] ) : ?>
-								<p class="description"><?php echo esc_html( wp_trim_words( $webhook['description'], 10 ) ); ?></p>
+							<?php if ( $dwm_webhook['description'] ) : ?>
+								<p class="description"><?php echo esc_html( wp_trim_words( $dwm_webhook['description'], 10 ) ); ?></p>
 							<?php endif; ?>
 						</td>
 						<td class="column-trigger">
 							<span class="dwm-trigger-badge">
 								<?php
-								$triggers = \DragonWebhookManager\Triggers::TRIGGERS;
-								echo esc_html( $triggers[ $webhook['trigger_event'] ]['label'] ?? $webhook['trigger_event'] );
+								$dwm_triggers = \DragonWebhookManager\Triggers::TRIGGERS;
+								echo esc_html( $dwm_triggers[ $dwm_webhook['trigger_event'] ]['label'] ?? $dwm_webhook['trigger_event'] );
 								?>
 							</span>
 						</td>
 						<td class="column-url">
-							<code class="dwm-url-display"><?php echo esc_html( wp_trim_words( $webhook['url'], 5, '...' ) ); ?></code>
+							<code class="dwm-url-display"><?php echo esc_html( wp_trim_words( $dwm_webhook['url'], 5, '...' ) ); ?></code>
 						</td>
 						<td class="column-method">
-							<span class="dwm-method-badge dwm-method-<?php echo esc_attr( strtolower( $webhook['method'] ) ); ?>">
-								<?php echo esc_html( $webhook['method'] ); ?>
+							<span class="dwm-method-badge dwm-method-<?php echo esc_attr( strtolower( $dwm_webhook['method'] ) ); ?>">
+								<?php echo esc_html( $dwm_webhook['method'] ); ?>
 							</span>
 						</td>
 						<td class="column-actions">
-							<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $webhook['id'] ) ); ?>"
+							<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $dwm_webhook['id'] ) ); ?>"
 								class="button button-small"
 								title="<?php esc_attr_e( 'Edit', 'dragon-webhook-manager' ); ?>">
 								<span class="dashicons dashicons-edit"></span>
 							</a>
 							<button type="button"
 								class="button button-small dwm-delete-webhook"
-								data-id="<?php echo esc_attr( $webhook['id'] ); ?>"
+								data-id="<?php echo esc_attr( $dwm_webhook['id'] ); ?>"
 								title="<?php esc_attr_e( 'Delete', 'dragon-webhook-manager' ); ?>">
 								<span class="dashicons dashicons-trash"></span>
 							</button>

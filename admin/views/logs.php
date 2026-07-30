@@ -6,6 +6,8 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dwm_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
 ?>
 <div class="wrap dwm-wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'Delivery Logs', 'dragon-webhook-manager' ); ?></h1>
@@ -17,19 +19,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<!-- Stats Grid -->
 	<div class="dwm-stats-grid">
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['total'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['total'] ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Total Deliveries', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card dwm-stat-success">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['success'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['success'] ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Successful', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card dwm-stat-error">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['failed'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['failed'] ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Failed', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $stats['avg_duration'] ); ?>ms</span>
+			<span class="dwm-stat-value"><?php echo esc_html( $dwm_stats['avg_duration'] ); ?>ms</span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Avg Duration', 'dragon-webhook-manager' ); ?></span>
 		</div>
 	</div>
@@ -42,10 +44,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<label for="dwm-filter-webhook"><?php esc_html_e( 'Filter by webhook:', 'dragon-webhook-manager' ); ?></label>
 			<select name="webhook_id" id="dwm-filter-webhook">
 				<option value=""><?php esc_html_e( 'All Webhooks', 'dragon-webhook-manager' ); ?></option>
-				<?php foreach ( $webhooks as $wh ) : ?>
-					<option value="<?php echo esc_attr( $wh['id'] ); ?>"
-						<?php selected( $webhook_id, $wh['id'] ); ?>>
-						<?php echo esc_html( $wh['name'] ); ?>
+				<?php foreach ( $dwm_webhooks as $dwm_wh ) : ?>
+					<option value="<?php echo esc_attr( $dwm_wh['id'] ); ?>"
+						<?php selected( $dwm_webhook_id, $dwm_wh['id'] ); ?>>
+						<?php echo esc_html( $dwm_wh['name'] ); ?>
 					</option>
 				<?php endforeach; ?>
 			</select>
@@ -70,19 +72,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</tr>
 		</thead>
 		<tbody>
-			<?php if ( empty( $logs ) ) : ?>
+			<?php if ( empty( $dwm_logs ) ) : ?>
 				<tr>
 					<td colspan="7" class="dwm-empty-state">
 						<p><?php esc_html_e( 'No delivery logs yet.', 'dragon-webhook-manager' ); ?></p>
 					</td>
 				</tr>
 			<?php else : ?>
-				<?php foreach ( $logs as $log ) : ?>
-					<tr data-log-id="<?php echo esc_attr( $log['id'] ); ?>">
+				<?php foreach ( $dwm_logs as $dwm_log ) : ?>
+					<tr data-log-id="<?php echo esc_attr( $dwm_log['id'] ); ?>">
 						<td class="column-webhook">
-							<?php if ( $log['webhook_name'] ) : ?>
-								<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $log['webhook_id'] ) ); ?>">
-									<?php echo esc_html( $log['webhook_name'] ); ?>
+							<?php if ( $dwm_log['webhook_name'] ) : ?>
+								<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $dwm_log['webhook_id'] ) ); ?>">
+									<?php echo esc_html( $dwm_log['webhook_name'] ); ?>
 								</a>
 							<?php else : ?>
 								<em><?php esc_html_e( '(deleted)', 'dragon-webhook-manager' ); ?></em>
@@ -90,47 +92,47 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</td>
 						<td class="column-trigger">
 							<?php
-							$triggers = \DragonWebhookManager\Triggers::TRIGGERS;
-							echo esc_html( $triggers[ $log['trigger_event'] ]['label'] ?? $log['trigger_event'] );
+							$dwm_triggers = \DragonWebhookManager\Triggers::TRIGGERS;
+							echo esc_html( $dwm_triggers[ $dwm_log['trigger_event'] ]['label'] ?? $dwm_log['trigger_event'] );
 							?>
 						</td>
 						<td class="column-status">
-							<span class="dwm-status-badge dwm-status-<?php echo esc_attr( $log['status'] ); ?>">
-								<?php echo esc_html( ucfirst( $log['status'] ) ); ?>
+							<span class="dwm-status-badge dwm-status-<?php echo esc_attr( $dwm_log['status'] ); ?>">
+								<?php echo esc_html( ucfirst( $dwm_log['status'] ) ); ?>
 							</span>
 						</td>
 						<td class="column-response">
-							<?php if ( $log['response_code'] ) : ?>
-								<code class="dwm-response-code dwm-response-<?php echo esc_attr( $log['response_code'] >= 400 ? 'error' : 'success' ); ?>">
-									<?php echo esc_html( $log['response_code'] ); ?>
+							<?php if ( $dwm_log['response_code'] ) : ?>
+								<code class="dwm-response-code dwm-response-<?php echo esc_attr( $dwm_log['response_code'] >= 400 ? 'error' : 'success' ); ?>">
+									<?php echo esc_html( $dwm_log['response_code'] ); ?>
 								</code>
 							<?php else : ?>
 								<span class="description">-</span>
 							<?php endif; ?>
 						</td>
 						<td class="column-duration">
-							<?php echo esc_html( $log['duration_ms'] ); ?>ms
+							<?php echo esc_html( $dwm_log['duration_ms'] ); ?>ms
 						</td>
 						<td class="column-time">
 							<?php
-							$time = strtotime( $log['created_at'] );
-							echo esc_html( human_time_diff( $time, time() ) . ' ' . __( 'ago', 'dragon-webhook-manager' ) );
+							$dwm_time = strtotime( $dwm_log['created_at'] );
+							echo esc_html( human_time_diff( $dwm_time, time() ) . ' ' . __( 'ago', 'dragon-webhook-manager' ) );
 							?>
 							<br>
-							<span class="description"><?php echo esc_html( wp_date( 'Y-m-d H:i:s', $time ) ); ?></span>
+							<span class="description"><?php echo esc_html( wp_date( 'Y-m-d H:i:s', $dwm_time ) ); ?></span>
 						</td>
 						<td class="column-actions">
-							<?php if ( 'failed' === $log['status'] ) : ?>
+							<?php if ( 'failed' === $dwm_log['status'] ) : ?>
 								<button type="button"
 									class="button button-small dwm-retry-delivery"
-									data-log-id="<?php echo esc_attr( $log['id'] ); ?>"
+									data-log-id="<?php echo esc_attr( $dwm_log['id'] ); ?>"
 									title="<?php esc_attr_e( 'Retry', 'dragon-webhook-manager' ); ?>">
 									<span class="dashicons dashicons-update"></span>
 								</button>
 							<?php endif; ?>
 							<button type="button"
 								class="button button-small dwm-view-log-details"
-								data-log='<?php echo esc_attr( wp_json_encode( $log ) ); ?>'
+								data-log='<?php echo esc_attr( wp_json_encode( $dwm_log ) ); ?>'
 								title="<?php esc_attr_e( 'View Details', 'dragon-webhook-manager' ); ?>">
 								<span class="dashicons dashicons-visibility"></span>
 							</button>

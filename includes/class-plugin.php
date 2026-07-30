@@ -29,7 +29,6 @@ class Plugin {
 
 	private function __construct() {
 		$this->init_components();
-		$this->init_hooks();
 	}
 
 	private function init_components(): void {
@@ -39,18 +38,6 @@ class Plugin {
 		$this->triggers = new Triggers( $this->webhook, $this->payload, $this->logger );
 		$this->admin    = new Admin( $this->webhook, $this->logger );
 		$this->ajax     = new Ajax( $this->webhook, $this->logger, $this->payload );
-	}
-
-	private function init_hooks(): void {
-		add_action( 'init', [ $this, 'load_textdomain' ] );
-	}
-
-	public function load_textdomain(): void {
-		load_plugin_textdomain(
-			'dragon-webhook-manager',
-			false,
-			dirname( DWM_PLUGIN_BASENAME ) . '/languages'
-		);
 	}
 
 	public function activate(): void {

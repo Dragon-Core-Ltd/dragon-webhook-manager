@@ -24,10 +24,21 @@ class Webhook {
 	public function get_all( bool $active_only = false ): array {
 		global $wpdb;
 
-		$where = $active_only ? 'WHERE is_active = 1' : '';
+		if ( $active_only ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
+			$results = $wpdb->get_results(
+				$wpdb->prepare( 'SELECT * FROM %i WHERE is_active = 1 ORDER BY created_at DESC', $this->table ),
+				ARRAY_A
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
+			$results = $wpdb->get_results(
+				$wpdb->prepare( 'SELECT * FROM %i ORDER BY created_at DESC', $this->table ),
+				ARRAY_A
+			);
+		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_results( "SELECT * FROM {$this->table} {$where} ORDER BY created_at DESC", ARRAY_A ) ?: [];
+		return $results ? $results : array();
 	}
 
 	/**
@@ -36,14 +47,17 @@ class Webhook {
 	public function get_by_trigger( string $trigger_event ): array {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
+		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$this->table} WHERE trigger_event = %s AND is_active = 1",
+				'SELECT * FROM %i WHERE trigger_event = %s AND is_active = 1',
+				$this->table,
 				$trigger_event
 			),
 			ARRAY_A
-		) ?: [];
+		);
+
+		return $results ? $results : array();
 	}
 
 	/**
@@ -52,13 +66,13 @@ class Webhook {
 	public function get( int $id ): ?array {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
 		$result = $wpdb->get_row(
-			$wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $id ),
+			$wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->table, $id ),
 			ARRAY_A
 		);
 
-		return $result ?: null;
+		return $result ? $result : null;
 	}
 
 	/**
@@ -68,24 +82,26 @@ class Webhook {
 		global $wpdb;
 
 		// Check free limit (Pro can override via filter).
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
 		$max_webhooks = apply_filters( 'dwm_max_webhooks', DWM_MAX_WEBHOOKS_FREE );
 		if ( $this->count() >= $max_webhooks ) {
 			return false;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Write to plugin's custom table.
 		$result = $wpdb->insert(
 			$this->table,
-			[
+			array(
 				'name'             => sanitize_text_field( $data['name'] ),
 				'description'      => sanitize_textarea_field( $data['description'] ?? '' ),
 				'trigger_event'    => sanitize_key( $data['trigger_event'] ),
 				'url'              => esc_url_raw( $data['url'] ),
-				'method'           => in_array( $data['method'] ?? 'POST', [ 'POST', 'PUT', 'PATCH' ], true ) ? $data['method'] : 'POST',
-				'headers'          => wp_json_encode( $data['headers'] ?? [] ),
+				'method'           => in_array( $data['method'] ?? 'POST', array( 'POST', 'PUT', 'PATCH' ), true ) ? $data['method'] : 'POST',
+				'headers'          => wp_json_encode( $data['headers'] ?? array() ),
 				'payload_template' => wp_unslash( $data['payload_template'] ?? '' ), // Don't use wp_kses_post on JSON/template data
 				'is_active'        => isset( $data['is_active'] ) ? (int) $data['is_active'] : 1,
-			],
-			[ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' ]
+			),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
 		);
 
 		return $result ? $wpdb->insert_id : false;
@@ -97,8 +113,8 @@ class Webhook {
 	public function update( int $id, array $data ): bool {
 		global $wpdb;
 
-		$update_data = [];
-		$format      = [];
+		$update_data = array();
+		$format      = array();
 
 		if ( isset( $data['name'] ) ) {
 			$update_data['name'] = sanitize_text_field( $data['name'] );
@@ -117,7 +133,7 @@ class Webhook {
 			$format[]           = '%s';
 		}
 		if ( isset( $data['method'] ) ) {
-			$update_data['method'] = in_array( $data['method'], [ 'POST', 'PUT', 'PATCH' ], true ) ? $data['method'] : 'POST';
+			$update_data['method'] = in_array( $data['method'], array( 'POST', 'PUT', 'PATCH' ), true ) ? $data['method'] : 'POST';
 			$format[]              = '%s';
 		}
 		if ( isset( $data['headers'] ) ) {
@@ -137,12 +153,13 @@ class Webhook {
 			return false;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to plugin's custom table.
 		$result = $wpdb->update(
 			$this->table,
 			$update_data,
-			[ 'id' => $id ],
+			array( 'id' => $id ),
 			$format,
-			[ '%d' ]
+			array( '%d' )
 		);
 
 		return false !== $result;
@@ -154,10 +171,11 @@ class Webhook {
 	public function delete( int $id ): bool {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to plugin's custom table.
 		$result = $wpdb->delete(
 			$this->table,
-			[ 'id' => $id ],
-			[ '%d' ]
+			array( 'id' => $id ),
+			array( '%d' )
 		);
 
 		return false !== $result;
@@ -173,7 +191,7 @@ class Webhook {
 			return false;
 		}
 
-		return $this->update( $id, [ 'is_active' => $webhook['is_active'] ? 0 : 1 ] );
+		return $this->update( $id, array( 'is_active' => $webhook['is_active'] ? 0 : 1 ) );
 	}
 
 	/**
@@ -182,8 +200,8 @@ class Webhook {
 	public function count(): int {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$this->table}" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table ) );
 	}
 
 	/**
@@ -192,16 +210,19 @@ class Webhook {
 	public function deliver( array $webhook, string $payload ): array {
 		// SSRF protection: Block requests to internal/private IPs.
 		if ( $this->is_internal_url( $webhook['url'] ) ) {
-			return [
+			return array(
 				'success'       => false,
 				'response_code' => 0,
 				'response_body' => '',
 				'duration_ms'   => 0,
 				'error_message' => __( 'Requests to internal or private IP addresses are not allowed.', 'dragon-webhook-manager' ),
-			];
+			);
 		}
 
-		$headers = json_decode( $webhook['headers'] ?? '{}', true ) ?: [];
+		$headers = json_decode( $webhook['headers'] ?? '{}', true );
+		if ( ! is_array( $headers ) ) {
+			$headers = array();
+		}
 
 		// Ensure Content-Type is set
 		if ( ! isset( $headers['Content-Type'] ) ) {
@@ -214,36 +235,36 @@ class Webhook {
 
 		$response = wp_remote_request(
 			$webhook['url'],
-			[
+			array(
 				'method'  => $webhook['method'] ?? 'POST',
 				'headers' => $headers,
 				'body'    => $payload,
 				'timeout' => $timeout,
-			]
+			)
 		);
 
 		$duration_ms = (int) ( ( microtime( true ) - $start_time ) * 1000 );
 
 		if ( is_wp_error( $response ) ) {
-			return [
+			return array(
 				'success'       => false,
 				'response_code' => 0,
 				'response_body' => '',
 				'duration_ms'   => $duration_ms,
 				'error_message' => $response->get_error_message(),
-			];
+			);
 		}
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
 
-		return [
+		return array(
 			'success'       => $response_code >= 200 && $response_code < 300,
 			'response_code' => $response_code,
 			'response_body' => $response_body,
 			'duration_ms'   => $duration_ms,
 			'error_message' => $response_code >= 400 ? "HTTP {$response_code}" : '',
-		];
+		);
 	}
 
 	/**

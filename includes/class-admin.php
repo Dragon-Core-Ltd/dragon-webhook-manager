@@ -18,8 +18,40 @@ class Admin {
 		$this->webhook = $webhook;
 		$this->logger  = $logger;
 
-		add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+
+		// Add License tab (Pro can override the content).
+		add_filter( 'dwm_admin_tabs', array( $this, 'add_license_tab' ), 5 );
+		add_action( 'dwm_admin_tab_license', array( $this, 'render_license_upsell' ), 100 );
+	}
+
+	/**
+	 * Add license tab to admin navigation.
+	 *
+	 * @param array $tabs Existing tabs.
+	 * @return array
+	 */
+	public function add_license_tab( array $tabs ): array {
+		// Only add if not already added by Pro.
+		if ( ! isset( $tabs['license'] ) ) {
+			$tabs['license'] = __( 'License', 'dragon-webhook-manager' );
+		}
+		return $tabs;
+	}
+
+	/**
+	 * Render license upsell (fallback when Pro not installed/licensed).
+	 * Pro plugin renders at priority 10, this runs at 100 as fallback.
+	 */
+	public function render_license_upsell(): void {
+		// Skip if Pro already rendered the license tab.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
+		if ( apply_filters( 'dwm_pro_triggers_enabled', false ) ) {
+			return;
+		}
+
+		include DWM_PLUGIN_DIR . 'admin/views/license-upsell.php';
 	}
 
 	public function add_admin_menu(): void {
@@ -28,7 +60,7 @@ class Admin {
 			__( 'Webhook Manager', 'dragon-webhook-manager' ),
 			'manage_options',
 			'dragon-webhook-manager',
-			[ $this, 'render_dashboard_page' ]
+			array( $this, 'render_dashboard_page' )
 		);
 	}
 
@@ -40,14 +72,14 @@ class Admin {
 		wp_enqueue_style(
 			'dwm-admin',
 			DWM_PLUGIN_URL . 'admin/css/admin.css',
-			[],
+			array(),
 			DWM_VERSION
 		);
 
 		wp_enqueue_script(
 			'dwm-admin',
 			DWM_PLUGIN_URL . 'admin/js/admin.js',
-			[ 'jquery' ],
+			array( 'jquery' ),
 			DWM_VERSION,
 			true
 		);
@@ -55,21 +87,21 @@ class Admin {
 		wp_localize_script(
 			'dwm-admin',
 			'dwmAdmin',
-			[
+			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'dwm_ajax_nonce' ),
-				'i18n'    => [
-					'confirmDelete'      => __( 'Are you sure you want to delete this webhook?', 'dragon-webhook-manager' ),
-					'confirmClearLogs'   => __( 'Are you sure you want to clear all logs?', 'dragon-webhook-manager' ),
-					'webhookSaved'       => __( 'Webhook saved successfully.', 'dragon-webhook-manager' ),
-					'webhookDeleted'     => __( 'Webhook deleted.', 'dragon-webhook-manager' ),
-					'webhookToggled'     => __( 'Webhook status updated.', 'dragon-webhook-manager' ),
-					'testSent'           => __( 'Test webhook sent.', 'dragon-webhook-manager' ),
-					'logsCleared'        => __( 'Logs cleared.', 'dragon-webhook-manager' ),
-					'error'              => __( 'An error occurred.', 'dragon-webhook-manager' ),
-					'limitReached'       => __( 'Webhook limit reached. Upgrade to Pro for unlimited webhooks.', 'dragon-webhook-manager' ),
-				],
-			]
+				'i18n'    => array(
+					'confirmDelete'    => __( 'Are you sure you want to delete this webhook?', 'dragon-webhook-manager' ),
+					'confirmClearLogs' => __( 'Are you sure you want to clear all logs?', 'dragon-webhook-manager' ),
+					'webhookSaved'     => __( 'Webhook saved successfully.', 'dragon-webhook-manager' ),
+					'webhookDeleted'   => __( 'Webhook deleted.', 'dragon-webhook-manager' ),
+					'webhookToggled'   => __( 'Webhook status updated.', 'dragon-webhook-manager' ),
+					'testSent'         => __( 'Test webhook sent.', 'dragon-webhook-manager' ),
+					'logsCleared'      => __( 'Logs cleared.', 'dragon-webhook-manager' ),
+					'error'            => __( 'An error occurred.', 'dragon-webhook-manager' ),
+					'limitReached'     => __( 'Webhook limit reached. Upgrade to Pro for unlimited webhooks.', 'dragon-webhook-manager' ),
+				),
+			)
 		);
 	}
 
@@ -79,13 +111,17 @@ class Admin {
 		}
 
 		// Check for tab parameter (for Pro license tab).
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view routing; no state change.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : '';
 		if ( $tab && has_action( 'dwm_admin_tab_' . $tab ) ) {
 			$this->render_tabs( $tab );
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
 			do_action( 'dwm_admin_tab_' . $tab );
+			echo '</div>'; // Close the wrap div opened by render_tabs().
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view routing; no state change.
 		$view = isset( $_GET['view'] ) ? sanitize_key( $_GET['view'] ) : 'list';
 
 		switch ( $view ) {
@@ -106,7 +142,8 @@ class Admin {
 	 * @param string $current_tab Current active tab.
 	 */
 	private function render_tabs( string $current_tab ): void {
-		$tabs = apply_filters( 'dwm_admin_tabs', [] );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
+		$tabs = apply_filters( 'dwm_admin_tabs', array() );
 		if ( empty( $tabs ) ) {
 			return;
 		}
@@ -125,35 +162,39 @@ class Admin {
 	}
 
 	private function render_list_page(): void {
-		$webhooks      = $this->webhook->get_all();
-		$webhook_count = $this->webhook->count();
-		$max_webhooks  = apply_filters( 'dwm_max_webhooks', DWM_MAX_WEBHOOKS_FREE );
-		$stats         = $this->logger->get_stats();
+		$dwm_webhooks      = $this->webhook->get_all();
+		$dwm_webhook_count = $this->webhook->count();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
+		$dwm_max_webhooks = apply_filters( 'dwm_max_webhooks', DWM_MAX_WEBHOOKS_FREE );
+		$dwm_stats        = $this->logger->get_stats();
 
 		include DWM_PLUGIN_DIR . 'admin/views/dashboard.php';
 	}
 
 	private function render_edit_page(): void {
-		$id      = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
-		$webhook = $id ? $this->webhook->get( $id ) : null;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view routing; no state change.
+		$dwm_id      = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
+		$dwm_webhook = $dwm_id ? $this->webhook->get( $dwm_id ) : null;
 
 		// Check limit for new webhooks (Pro can override via filter).
-		$max_webhooks = apply_filters( 'dwm_max_webhooks', DWM_MAX_WEBHOOKS_FREE );
-		if ( ! $id && $this->webhook->count() >= $max_webhooks ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
+		$dwm_max_webhooks = apply_filters( 'dwm_max_webhooks', DWM_MAX_WEBHOOKS_FREE );
+		if ( ! $dwm_id && $this->webhook->count() >= $dwm_max_webhooks ) {
 			wp_die( esc_html__( 'Webhook limit reached. Upgrade to Pro for unlimited webhooks.', 'dragon-webhook-manager' ) );
 		}
 
-		$triggers          = Triggers::get_triggers_grouped();
-		$variable_reference = Payload::get_variable_reference();
+		$dwm_triggers           = Triggers::get_triggers_grouped();
+		$dwm_variable_reference = Payload::get_variable_reference();
 
 		include DWM_PLUGIN_DIR . 'admin/views/edit.php';
 	}
 
 	private function render_logs_page(): void {
-		$webhook_id = isset( $_GET['webhook_id'] ) ? absint( $_GET['webhook_id'] ) : null;
-		$logs       = $this->logger->get_logs( 100, 0, $webhook_id );
-		$stats      = $this->logger->get_stats();
-		$webhooks   = $this->webhook->get_all();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter parameter; no state change.
+		$dwm_webhook_id = isset( $_GET['webhook_id'] ) ? absint( $_GET['webhook_id'] ) : null;
+		$dwm_logs       = $this->logger->get_logs( 100, 0, $dwm_webhook_id );
+		$dwm_stats      = $this->logger->get_stats();
+		$dwm_webhooks   = $this->webhook->get_all();
 
 		include DWM_PLUGIN_DIR . 'admin/views/logs.php';
 	}
