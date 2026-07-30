@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name: Dragon Webhook Manager
- * Plugin URI: https://plugins.dragoncore.ltd/plugins/dragon-webhook-manager/
+ * Plugin URI: https://dragoncore.ltd/plugins/dragon-webhook-manager
  * Description: Visual interface for creating outgoing webhooks on any WordPress event. Build automations without code.
  * Version: 1.0.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Dragon Core
- * Author URI: https://plugins.dragoncore.ltd
+ * Author URI: https://dragoncore.ltd
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: dragon-webhook-manager

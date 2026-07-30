@@ -78,7 +78,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<strong><?php esc_html_e( 'Need WooCommerce webhooks?', 'dragon-webhook-manager' ); ?></strong>
 			<span><?php esc_html_e( 'Upgrade to Pro for 20+ WooCommerce triggers: orders, customers, products, inventory alerts & more.', 'dragon-webhook-manager' ); ?></span>
 		</div>
-		<a href="https://plugins.dragoncore.ltd/plugins/dragon-webhook-manager-pro/" target="_blank" class="button button-primary">
+		<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro" target="_blank" class="button button-primary">
 			<?php esc_html_e( 'Get Pro', 'dragon-webhook-manager' ); ?>
 		</a>
 	</div>

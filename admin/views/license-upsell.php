@@ -60,7 +60,7 @@ $dwm_pro_installed = defined( 'DWMP_VERSION' );
 				</li>
 			</ul>
 			<p>
-				<a href="https://plugins.dragoncore.ltd/plugins/dragon-webhook-manager-pro/" class="button button-primary button-hero" target="_blank">
+				<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro" class="button button-primary button-hero" target="_blank">
 					<?php esc_html_e( 'Get Pro License', 'dragon-webhook-manager' ); ?>
 				</a>
 			</p>

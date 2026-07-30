@@ -100,7 +100,7 @@ $dwm_default_payload = '{
 						printf(
 							/* translators: %s: upgrade link */
 							esc_html__( 'Need WooCommerce triggers? %s', 'dragon-webhook-manager' ),
-							'<a href="https://plugins.dragoncore.ltd/plugins/dragon-webhook-manager-pro/" target="_blank">' . esc_html__( 'Upgrade to Pro', 'dragon-webhook-manager' ) . '</a>'
+							'<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro" target="_blank">' . esc_html__( 'Upgrade to Pro', 'dragon-webhook-manager' ) . '</a>'
 						);
 						?>
 					</p>
