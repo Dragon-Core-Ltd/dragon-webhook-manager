@@ -208,6 +208,33 @@ class Logger {
 	}
 
 	/**
+	 * Create a minimal log entry and return its ID.
+	 *
+	 * Used by the Pro integration (retry) to open a log row that a later
+	 * update fills in with the delivery outcome. Only core columns are set;
+	 * Pro-specific fields (retry linkage) are stored separately by Pro.
+	 *
+	 * @param array $data Log data: webhook_id, trigger_event, status.
+	 * @return int New log ID (0 on failure).
+	 */
+	public function create( array $data ): int {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Write to plugin's custom table.
+		$wpdb->insert(
+			$this->table,
+			array(
+				'webhook_id'    => (int) ( $data['webhook_id'] ?? 0 ),
+				'trigger_event' => (string) ( $data['trigger_event'] ?? '' ),
+				'status'        => (string) ( $data['status'] ?? 'pending' ),
+			),
+			array( '%d', '%s', '%s' )
+		);
+
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
 	 * Delete logs for a webhook
 	 */
 	public function delete_for_webhook( int $webhook_id ): void {

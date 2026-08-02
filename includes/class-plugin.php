@@ -19,6 +19,7 @@ class Plugin {
 	private Logger $logger;
 	private Admin $admin;
 	private Ajax $ajax;
+	private Integration $integration;
 
 	public static function get_instance(): Plugin {
 		if ( null === self::$instance ) {
@@ -38,6 +39,9 @@ class Plugin {
 		$this->triggers = new Triggers( $this->webhook, $this->payload, $this->logger );
 		$this->admin    = new Admin( $this->webhook, $this->logger );
 		$this->ajax     = new Ajax( $this->webhook, $this->logger, $this->payload );
+
+		// Pro integration hook API (used by Dragon Webhook Manager Pro).
+		$this->integration = new Integration( $this->webhook, $this->payload, $this->logger );
 	}
 
 	public function activate(): void {

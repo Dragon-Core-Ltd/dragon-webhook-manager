@@ -4,7 +4,7 @@ Tags: webhooks, automation, woocommerce, notifications, api
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,9 @@ The free version works alongside WooCommerce but doesn't have WooCommerce-specif
 4. Variable Reference - Available template variables
 
 == Changelog ==
+
+= 1.0.3 =
+* Add the integration API that Dragon Webhook Manager Pro uses, so Pro's automatic retry and HMAC request signing work correctly.
 
 = 1.0.2 =
 * Security: pin each delivery to the IP address that passed the safety check, so a DNS change between the check and the request cannot redirect it to an internal host (DNS-rebinding).
