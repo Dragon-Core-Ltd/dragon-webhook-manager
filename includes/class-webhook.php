@@ -208,8 +208,13 @@ class Webhook {
 	 * Deliver webhook
 	 */
 	public function deliver( array $webhook, string $payload ): array {
-		// SSRF protection: Block requests to internal/private IPs.
-		if ( $this->is_internal_url( $webhook['url'] ) ) {
+		$url = (string) ( $webhook['url'] ?? '' );
+
+		// SSRF protection: resolve and validate the target up front.
+		$target  = self::resolve_target( $url );
+		$blocked = (bool) apply_filters( 'dwm_is_internal_url', $target['blocked'], $url ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's established prefix.
+
+		if ( $blocked ) {
 			return array(
 				'success'       => false,
 				'response_code' => 0,
@@ -233,15 +238,38 @@ class Webhook {
 
 		$start_time = microtime( true );
 
+		// Pin the connection to the exact address we validated so a DNS change
+		// (rebinding) between the check and the request cannot redirect it to an
+		// internal host. Scoped to this one request via add/remove_action.
+		$pin    = $target['pin'];
+		$pinner = null;
+		if ( is_string( $pin ) && function_exists( 'curl_setopt' ) ) {
+			$pinner = static function ( $handle, $args, $request_url ) use ( $pin, $url ) {
+				unset( $args );
+				if ( $request_url === $url ) {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.curl_curl_setopt -- CURLOPT_RESOLVE has no wp_remote_* equivalent; it pins the connection to the pre-validated IP to prevent DNS-rebinding SSRF.
+					curl_setopt( $handle, CURLOPT_RESOLVE, array( $pin ) );
+				}
+			};
+			add_action( 'http_api_curl', $pinner, 10, 3 );
+		}
+
 		$response = wp_remote_request(
-			$webhook['url'],
+			$url,
 			array(
-				'method'  => $webhook['method'] ?? 'POST',
-				'headers' => $headers,
-				'body'    => $payload,
-				'timeout' => $timeout,
+				'method'      => $webhook['method'] ?? 'POST',
+				'headers'     => $headers,
+				'body'        => $payload,
+				'timeout'     => $timeout,
+				// Do not follow redirects: a 30x to an internal host would be
+				// re-resolved unpinned and reopen the SSRF hole.
+				'redirection' => 0,
 			)
 		);
+
+		if ( null !== $pinner ) {
+			remove_action( 'http_api_curl', $pinner, 10 );
+		}
 
 		$duration_ms = (int) ( ( microtime( true ) - $start_time ) * 1000 );
 
@@ -268,53 +296,51 @@ class Webhook {
 	}
 
 	/**
-	 * Check if URL targets an internal/private IP address (SSRF protection).
+	 * Resolve a webhook URL and decide whether it may be delivered.
 	 *
 	 * Resolves the host to every IPv4 and IPv6 address and blocks the request
 	 * if any of them is a loopback, link-local (incl. cloud metadata), private,
 	 * or reserved address — a hostname is only as safe as its riskiest record.
-	 * The result is filterable via `dwm_is_internal_url` so an operator who
-	 * genuinely needs to reach an internal endpoint can opt a URL back in.
+	 * An unresolvable host is blocked (fail closed). On success it returns a
+	 * CURLOPT_RESOLVE pin string ("host:port:ip") so the caller can force the
+	 * connection to the exact address that was validated, defeating DNS
+	 * rebinding between this check and the request.
 	 *
 	 * @param string $url Target URL.
-	 * @return bool True if the URL should be blocked.
+	 * @return array{blocked: bool, pin: string|null}
 	 */
-	private function is_internal_url( string $url ): bool {
-		$blocked = $this->compute_is_internal_url( $url );
+	public static function resolve_target( string $url ): array {
+		$deny = array(
+			'blocked' => true,
+			'pin'     => null,
+		);
 
-		/**
-		 * Filter whether a webhook target URL is treated as internal (blocked).
-		 *
-		 * @param bool   $blocked Whether the URL is blocked.
-		 * @param string $url     The target URL.
-		 */
-		return (bool) apply_filters( 'dwm_is_internal_url', $blocked, $url ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's established prefix.
-	}
-
-	/**
-	 * Resolve the URL host and test every address against blocked ranges.
-	 *
-	 * @param string $url Target URL.
-	 * @return bool True if the URL is invalid or resolves to a blocked address.
-	 */
-	private function compute_is_internal_url( string $url ): bool {
 		$parsed = wp_parse_url( $url );
 		if ( ! $parsed || empty( $parsed['host'] ) ) {
-			return true; // Invalid URL, block it.
+			return $deny;
 		}
 
-		$host = strtolower( trim( $parsed['host'], '[]' ) );
+		$scheme = strtolower( (string) ( $parsed['scheme'] ?? 'https' ) );
+		$host   = strtolower( trim( (string) $parsed['host'], '[]' ) );
+		$port   = isset( $parsed['port'] ) ? (int) $parsed['port'] : ( 'http' === $scheme ? 80 : 443 );
 
 		// Block localhost variants by name.
 		if ( 'localhost' === $host || str_ends_with( $host, '.localhost' ) ) {
-			return true;
+			return $deny;
 		}
 
-		// An IP literal is checked directly.
+		// An IP literal has no DNS to rebind: validate it, but there is nothing
+		// to pin (and an IPv6 literal cannot be expressed as a host:port:ip pin).
 		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
-			return self::is_blocked_ip( $host );
+			return self::is_blocked_ip( $host )
+				? $deny
+				: array(
+					'blocked' => false,
+					'pin'     => null,
+				);
 		}
 
+		// Resolve the hostname to every IPv4 and IPv6 address.
 		$ips = array();
 
 		$v4 = gethostbynamel( $host );
@@ -331,15 +357,29 @@ class Webhook {
 			}
 		}
 
-		// Unresolvable host: allow it through — the request will simply fail,
-		// and blocking here would break legitimate hosts on transient DNS.
+		// Fail closed: an unresolvable host must not slip through, or a host
+		// that resolves only at request time would be an SSRF bypass.
+		if ( empty( $ips ) ) {
+			return $deny;
+		}
+
+		$safe = null;
 		foreach ( $ips as $ip ) {
 			if ( self::is_blocked_ip( $ip ) ) {
-				return true;
+				return $deny; // Any blocked address blocks the whole host.
+			}
+			if ( null === $safe ) {
+				$safe = $ip;
 			}
 		}
 
-		return false;
+		// CURLOPT_RESOLVE wants IPv6 literals in square brackets.
+		$pin_ip = ( false !== strpos( (string) $safe, ':' ) ) ? '[' . $safe . ']' : $safe;
+
+		return array(
+			'blocked' => false,
+			'pin'     => $host . ':' . $port . ':' . $pin_ip,
+		);
 	}
 
 	/**

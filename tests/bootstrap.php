@@ -11,4 +11,11 @@
 defined( 'ABSPATH' ) || define( 'ABSPATH', __DIR__ . '/' );
 
 require_once __DIR__ . '/../vendor/autoload.php';
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		return parse_url( (string) $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
+	}
+}
+
 require_once __DIR__ . '/../includes/class-webhook.php';
