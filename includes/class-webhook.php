@@ -269,39 +269,90 @@ class Webhook {
 
 	/**
 	 * Check if URL targets an internal/private IP address (SSRF protection).
+	 *
+	 * Resolves the host to every IPv4 and IPv6 address and blocks the request
+	 * if any of them is a loopback, link-local (incl. cloud metadata), private,
+	 * or reserved address — a hostname is only as safe as its riskiest record.
+	 * The result is filterable via `dwm_is_internal_url` so an operator who
+	 * genuinely needs to reach an internal endpoint can opt a URL back in.
+	 *
+	 * @param string $url Target URL.
+	 * @return bool True if the URL should be blocked.
 	 */
 	private function is_internal_url( string $url ): bool {
+		$blocked = $this->compute_is_internal_url( $url );
+
+		/**
+		 * Filter whether a webhook target URL is treated as internal (blocked).
+		 *
+		 * @param bool   $blocked Whether the URL is blocked.
+		 * @param string $url     The target URL.
+		 */
+		return (bool) apply_filters( 'dwm_is_internal_url', $blocked, $url ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's established prefix.
+	}
+
+	/**
+	 * Resolve the URL host and test every address against blocked ranges.
+	 *
+	 * @param string $url Target URL.
+	 * @return bool True if the URL is invalid or resolves to a blocked address.
+	 */
+	private function compute_is_internal_url( string $url ): bool {
 		$parsed = wp_parse_url( $url );
 		if ( ! $parsed || empty( $parsed['host'] ) ) {
 			return true; // Invalid URL, block it.
 		}
 
-		$host = strtolower( $parsed['host'] );
+		$host = strtolower( trim( $parsed['host'], '[]' ) );
 
-		// Block localhost variants.
+		// Block localhost variants by name.
 		if ( 'localhost' === $host || str_ends_with( $host, '.localhost' ) ) {
 			return true;
 		}
 
-		// Resolve hostname to IP.
-		$ip = gethostbyname( $host );
-		if ( $ip === $host ) {
-			// Could not resolve, check if it's already an IP.
-			$ip = $host;
+		// An IP literal is checked directly.
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			return self::is_blocked_ip( $host );
 		}
 
-		// Validate IP and block private/reserved ranges.
-		if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-			// Block private and reserved IP ranges.
-			if ( ! filter_var(
-				$ip,
-				FILTER_VALIDATE_IP,
-				FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-			) ) {
+		$ips = array();
+
+		$v4 = gethostbynamel( $host );
+		if ( is_array( $v4 ) ) {
+			$ips = array_merge( $ips, $v4 );
+		}
+
+		$aaaa = dns_get_record( $host, DNS_AAAA );
+		if ( is_array( $aaaa ) ) {
+			foreach ( $aaaa as $record ) {
+				if ( ! empty( $record['ipv6'] ) ) {
+					$ips[] = $record['ipv6'];
+				}
+			}
+		}
+
+		// Unresolvable host: allow it through — the request will simply fail,
+		// and blocking here would break legitimate hosts on transient DNS.
+		foreach ( $ips as $ip ) {
+			if ( self::is_blocked_ip( $ip ) ) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether an IP address is in a loopback, link-local, private, or reserved range.
+	 *
+	 * @param string $ip IPv4 or IPv6 address.
+	 * @return bool
+	 */
+	public static function is_blocked_ip( string $ip ): bool {
+		if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+			return true; // Not a valid IP: fail closed.
+		}
+
+		return ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
 	}
 }

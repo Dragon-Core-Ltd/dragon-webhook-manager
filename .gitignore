@@ -18,10 +18,9 @@ Thumbs.db
 .wp-env.json
 .wp-env.override.json
 
-# Testing
-phpunit.xml
-tests/
+# Testing (phpunit.xml and tests/ are source and ARE tracked; the release ZIP excludes them at build time)
 coverage/
+.phpunit.result.cache
 
 # Dev config
 phpcs.xml.dist
