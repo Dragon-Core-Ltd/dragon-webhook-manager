@@ -4,7 +4,7 @@ Tags: webhooks, automation, woocommerce, notifications, api
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,11 @@ The free version works alongside WooCommerce but doesn't have WooCommerce-specif
 4. Variable Reference - Available template variables
 
 == Changelog ==
+
+= 1.0.2 =
+* Security: pin each delivery to the IP address that passed the safety check, so a DNS change between the check and the request cannot redirect it to an internal host (DNS-rebinding).
+* Security: webhook deliveries no longer follow redirects — a redirect to an internal address would otherwise bypass the safety check. A redirecting endpoint is now reported clearly in the delivery log; point the webhook at the final URL instead.
+* Security: an unresolvable webhook host is now blocked rather than allowed through.
 
 = 1.0.1 =
 * Security: strengthen the SSRF guard to resolve and check every IPv4 and IPv6 address a webhook host points to (previously only the first IPv4 record), closing an IPv6/multi-record bypass. Adds the `dwm_is_internal_url` filter for operators who deliberately need an internal endpoint.

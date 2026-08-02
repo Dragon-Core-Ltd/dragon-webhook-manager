@@ -244,14 +244,16 @@ class Webhook {
 		$pin    = $target['pin'];
 		$pinner = null;
 		if ( is_string( $pin ) && function_exists( 'curl_setopt' ) ) {
-			$pinner = static function ( $handle, $args, $request_url ) use ( $pin, $url ) {
-				unset( $args );
-				if ( $request_url === $url ) {
-					// phpcs:ignore WordPress.WP.AlternativeFunctions.curl_curl_setopt -- CURLOPT_RESOLVE has no wp_remote_* equivalent; it pins the connection to the pre-validated IP to prevent DNS-rebinding SSRF.
-					curl_setopt( $handle, CURLOPT_RESOLVE, array( $pin ) );
-				}
+			// Applied unconditionally within the add/remove window below: this
+			// deliver() makes exactly one synchronous request, so the only
+			// http_api_curl that fires is ours. (Matching on the URL argument
+			// is unreliable — WP may normalize it before re-dispatching the
+			// back-compat action through the Requests hook.)
+			$pinner = static function ( $handle ) use ( $pin ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.curl_curl_setopt -- CURLOPT_RESOLVE has no wp_remote_* equivalent; it pins the connection to the pre-validated IP to prevent DNS-rebinding SSRF.
+				curl_setopt( $handle, CURLOPT_RESOLVE, array( $pin ) );
 			};
-			add_action( 'http_api_curl', $pinner, 10, 3 );
+			add_action( 'http_api_curl', $pinner );
 		}
 
 		$response = wp_remote_request(
@@ -286,12 +288,26 @@ class Webhook {
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
 
+		if ( $response_code >= 300 && $response_code < 400 ) {
+			// Redirects are intentionally not followed (SSRF), so explain the
+			// non-2xx result rather than logging a blank failure.
+			$error_message = sprintf(
+				/* translators: %d: HTTP status code. */
+				__( 'HTTP %d: the endpoint redirected, and redirects are not followed. Use the final URL directly.', 'dragon-webhook-manager' ),
+				$response_code
+			);
+		} elseif ( $response_code >= 400 ) {
+			$error_message = "HTTP {$response_code}";
+		} else {
+			$error_message = '';
+		}
+
 		return array(
 			'success'       => $response_code >= 200 && $response_code < 300,
 			'response_code' => $response_code,
 			'response_body' => $response_body,
 			'duration_ms'   => $duration_ms,
-			'error_message' => $response_code >= 400 ? "HTTP {$response_code}" : '',
+			'error_message' => $error_message,
 		);
 	}
 
