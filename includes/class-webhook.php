@@ -82,8 +82,8 @@ class Webhook {
 		global $wpdb;
 
 		// Check free limit (Pro can override via filter).
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
-		$max_webhooks = apply_filters( 'dwm_max_webhooks', DWM_MAX_WEBHOOKS_FREE );
+
+		$max_webhooks = apply_filters( 'dragonwebhookmanager_max_webhooks', DRAGONWEBHOOKMANAGER_MAX_WEBHOOKS_FREE );
 		if ( $this->count() >= $max_webhooks ) {
 			return false;
 		}
@@ -212,7 +212,7 @@ class Webhook {
 
 		// SSRF protection: resolve and validate the target up front.
 		$target  = self::resolve_target( $url );
-		$blocked = (bool) apply_filters( 'dwm_is_internal_url', $target['blocked'], $url ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's established prefix.
+		$blocked = (bool) apply_filters( 'dragonwebhookmanager_is_internal_url', $target['blocked'], $url );
 
 		if ( $blocked ) {
 			return array(
@@ -234,7 +234,7 @@ class Webhook {
 			$headers['Content-Type'] = 'application/json';
 		}
 
-		$timeout = (int) get_option( 'dwm_default_timeout', 30 );
+		$timeout = (int) get_option( 'dragonwebhookmanager_default_timeout', 30 );
 
 		$start_time = microtime( true );
 

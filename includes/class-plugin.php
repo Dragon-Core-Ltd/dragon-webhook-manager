@@ -29,7 +29,45 @@ class Plugin {
 	}
 
 	private function __construct() {
+		self::migrate_legacy_prefix();
 		$this->init_components();
+	}
+
+	/**
+	 * Move options and the cleanup schedule off the pre-1.0.4 three-letter (dwm_)
+	 * prefix.
+	 *
+	 * The prefix was renamed to the namespace-derived `dragonwebhookmanager_` to
+	 * satisfy the WordPress.org uniqueness rule. Option values are carried across
+	 * once and the log-cleanup cron is re-pointed at the renamed hook. The
+	 * webhooks and logs tables keep their names (matched by exact name), so
+	 * configured webhooks and delivery history are untouched.
+	 */
+	private static function migrate_legacy_prefix(): void {
+		// db_version is a schema marker managed by activation, not user data.
+		delete_option( 'dwm_db_version' );
+
+		$options = array( 'default_timeout', 'log_retention_days' );
+
+		// Copy each legacy value onto the new name, then remove the legacy copy —
+		// per option, so the delete only ever runs after a successful copy. (A
+		// single shared guard would delete on a deactivate/reactivate cycle, where
+		// activation re-stamps the new db_version before the copy could run.)
+		foreach ( $options as $name ) {
+			$legacy = get_option( 'dwm_' . $name, null );
+			if ( null !== $legacy ) {
+				update_option( 'dragonwebhookmanager_' . $name, $legacy );
+				delete_option( 'dwm_' . $name );
+			}
+		}
+
+		$legacy_cron = wp_next_scheduled( 'dwm_cleanup_logs' );
+		if ( $legacy_cron ) {
+			wp_unschedule_event( $legacy_cron, 'dwm_cleanup_logs' );
+		}
+		if ( ! wp_next_scheduled( 'dragonwebhookmanager_cleanup_logs' ) ) {
+			wp_schedule_event( time(), 'daily', 'dragonwebhookmanager_cleanup_logs' );
+		}
 	}
 
 	private function init_components(): void {
@@ -49,8 +87,8 @@ class Plugin {
 		$this->set_default_options();
 
 		// Schedule log cleanup
-		if ( ! wp_next_scheduled( 'dwm_cleanup_logs' ) ) {
-			wp_schedule_event( time(), 'daily', 'dwm_cleanup_logs' );
+		if ( ! wp_next_scheduled( 'dragonwebhookmanager_cleanup_logs' ) ) {
+			wp_schedule_event( time(), 'daily', 'dragonwebhookmanager_cleanup_logs' );
 		}
 
 		flush_rewrite_rules();
@@ -58,7 +96,7 @@ class Plugin {
 
 	public function deactivate(): void {
 		// Clear scheduled events
-		wp_clear_scheduled_hook( 'dwm_cleanup_logs' );
+		wp_clear_scheduled_hook( 'dragonwebhookmanager_cleanup_logs' );
 
 		flush_rewrite_rules();
 	}
@@ -114,15 +152,15 @@ class Plugin {
 		) $charset_collate;";
 		dbDelta( $sql_logs );
 
-		update_option( 'dwm_db_version', DWM_VERSION );
+		update_option( 'dragonwebhookmanager_db_version', DRAGONWEBHOOKMANAGER_VERSION );
 	}
 
 	private function set_default_options(): void {
-		if ( false === get_option( 'dwm_log_retention_days' ) ) {
-			update_option( 'dwm_log_retention_days', 7 );
+		if ( false === get_option( 'dragonwebhookmanager_log_retention_days' ) ) {
+			update_option( 'dragonwebhookmanager_log_retention_days', 7 );
 		}
-		if ( false === get_option( 'dwm_default_timeout' ) ) {
-			update_option( 'dwm_default_timeout', 30 );
+		if ( false === get_option( 'dragonwebhookmanager_default_timeout' ) ) {
+			update_option( 'dragonwebhookmanager_default_timeout', 30 );
 		}
 	}
 

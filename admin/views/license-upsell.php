@@ -9,12 +9,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dwm_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
 
-$dwm_pro_installed = defined( 'DWMP_VERSION' );
+$dragonwebhookmanager_pro_installed = defined( 'DWMP_VERSION' );
 ?>
 <div class="dwm-license-upsell">
-	<?php if ( $dwm_pro_installed ) : ?>
+	<?php if ( $dragonwebhookmanager_pro_installed ) : ?>
 		<!-- Pro is installed but not licensed -->
 		<div class="dwm-license-upsell__box dwm-license-upsell__box--warning">
 			<h2><?php esc_html_e( 'Activate Your License', 'dragon-webhook-manager' ); ?></h2>

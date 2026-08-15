@@ -116,7 +116,7 @@ class Triggers {
 		$this->register_hooks();
 
 		// Allow Pro to dispatch triggers.
-		add_action( 'dwm_trigger_fired', array( $this, 'dispatch' ), 10, 2 );
+		add_action( 'dragonwebhookmanager_trigger_fired', array( $this, 'dispatch' ), 10, 2 );
 	}
 
 	private function register_hooks(): void {
@@ -254,8 +254,8 @@ class Triggers {
 	 */
 	private function execute_webhook( array $webhook, array $context ): void {
 		// Allow Pro to check conditions.
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
-		$should_deliver = apply_filters( 'dwm_should_deliver', true, $webhook, $context );
+
+		$should_deliver = apply_filters( 'dragonwebhookmanager_should_deliver', true, $webhook, $context );
 		if ( ! $should_deliver ) {
 			return;
 		}
@@ -268,8 +268,8 @@ class Triggers {
 		if ( ! is_array( $webhook_headers ) ) {
 			$webhook_headers = array();
 		}
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
-		$webhook_headers    = apply_filters( 'dwm_webhook_headers', $webhook_headers, $webhook, $payload );
+
+		$webhook_headers    = apply_filters( 'dragonwebhookmanager_webhook_headers', $webhook_headers, $webhook, $payload );
 		$webhook['headers'] = wp_json_encode( $webhook_headers );
 
 		// Start log
@@ -290,8 +290,8 @@ class Triggers {
 
 		// Allow Pro to handle retries on failure.
 		if ( ! $result['success'] ) {
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
-			do_action( 'dwm_delivery_failed', $log_id, $webhook, $context );
+
+			do_action( 'dragonwebhookmanager_delivery_failed', $log_id, $webhook, $context );
 		}
 	}
 
@@ -299,8 +299,8 @@ class Triggers {
 	 * Get all available triggers
 	 */
 	public static function get_triggers(): array {
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix; hook consumed by Dragon Webhook Manager Pro.
-		return apply_filters( 'dwm_triggers', self::TRIGGERS );
+
+		return apply_filters( 'dragonwebhookmanager_triggers', self::TRIGGERS );
 	}
 
 	/**

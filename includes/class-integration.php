@@ -2,7 +2,7 @@
 /**
  * Pro integration API.
  *
- * Dragon Webhook Manager Pro re-delivers and logs through a set of `dwm_*`
+ * Dragon Webhook Manager Pro re-delivers and logs through a set of `dragonwebhookmanager_*`
  * hooks rather than reaching into the free plugin's classes directly. This
  * class implements those hooks against the custom-table storage, so Pro
  * features (auto-retry) work without assuming webhooks/logs are posts.
@@ -54,10 +54,10 @@ class Integration {
 		$this->payload = $payload;
 		$this->logger  = $logger;
 
-		add_filter( 'dwm_get_webhook', array( $this, 'get_webhook' ), 10, 2 );
-		add_filter( 'dwm_deliver_webhook', array( $this, 'deliver_webhook' ), 10, 3 );
-		add_filter( 'dwm_create_log', array( $this, 'create_log' ), 10, 2 );
-		add_action( 'dwm_update_log', array( $this, 'update_log' ), 10, 2 );
+		add_filter( 'dragonwebhookmanager_get_webhook', array( $this, 'get_webhook' ), 10, 2 );
+		add_filter( 'dragonwebhookmanager_deliver_webhook', array( $this, 'deliver_webhook' ), 10, 3 );
+		add_filter( 'dragonwebhookmanager_create_log', array( $this, 'create_log' ), 10, 2 );
+		add_action( 'dragonwebhookmanager_update_log', array( $this, 'update_log' ), 10, 2 );
 	}
 
 	/**
@@ -78,7 +78,7 @@ class Integration {
 	/**
 	 * Render the payload and deliver a webhook through the safe delivery path.
 	 *
-	 * Re-applies `dwm_webhook_headers` so Pro's HMAC signature is added to the
+	 * Re-applies `dragonwebhookmanager_webhook_headers` so Pro's HMAC signature is added to the
 	 * retried request, exactly as on the original delivery.
 	 *
 	 * @param mixed $result  Short-circuit value.
@@ -99,7 +99,7 @@ class Integration {
 		}
 
 		/** This filter is documented in includes/class-triggers.php */
-		$headers            = apply_filters( 'dwm_webhook_headers', $headers, $webhook, $payload ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- dwm_ is this plugin's prefix.
+		$headers            = apply_filters( 'dragonwebhookmanager_webhook_headers', $headers, $webhook, $payload );
 		$webhook['headers'] = wp_json_encode( $headers );
 
 		return $this->webhook->deliver( $webhook, $payload );

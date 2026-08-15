@@ -59,7 +59,7 @@
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
 				data: {
-					action: 'dwm_toggle_webhook',
+					action: 'dragonwebhookmanager_toggle_webhook',
 					nonce: dwmAdmin.nonce,
 					id: id
 				},
@@ -91,7 +91,7 @@
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
 				data: {
-					action: 'dwm_delete_webhook',
+					action: 'dragonwebhookmanager_delete_webhook',
 					nonce: dwmAdmin.nonce,
 					id: id
 				},
@@ -121,7 +121,7 @@
 			$.ajax({
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
-				data: $form.serialize() + '&action=dwm_save_webhook&nonce=' + dwmAdmin.nonce,
+				data: $form.serialize() + '&action=dragonwebhookmanager_save_webhook&nonce=' + dwmAdmin.nonce,
 				success: function(response) {
 					if (response.success) {
 						DWM.showToast(dwmAdmin.i18n.webhookSaved, 'success');
@@ -151,7 +151,7 @@
 			$.ajax({
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
-				data: $form.serialize() + '&action=dwm_test_webhook&nonce=' + dwmAdmin.nonce,
+				data: $form.serialize() + '&action=dragonwebhookmanager_test_webhook&nonce=' + dwmAdmin.nonce,
 				success: function(response) {
 					var html = '';
 					if (response.success) {
@@ -203,7 +203,7 @@
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
 				data: {
-					action: 'dwm_clear_logs',
+					action: 'dragonwebhookmanager_clear_logs',
 					nonce: dwmAdmin.nonce
 				},
 				success: function(response) {
@@ -233,7 +233,7 @@
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
 				data: {
-					action: 'dwm_retry_delivery',
+					action: 'dragonwebhookmanager_retry_delivery',
 					nonce: dwmAdmin.nonce,
 					log_id: logId
 				},

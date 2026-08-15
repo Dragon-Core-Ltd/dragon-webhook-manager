@@ -20,19 +20,19 @@ class Ajax {
 		$this->logger  = $logger;
 		$this->payload = $payload;
 
-		add_action( 'wp_ajax_dwm_save_webhook', array( $this, 'handle_save_webhook' ) );
-		add_action( 'wp_ajax_dwm_delete_webhook', array( $this, 'handle_delete_webhook' ) );
-		add_action( 'wp_ajax_dwm_toggle_webhook', array( $this, 'handle_toggle_webhook' ) );
-		add_action( 'wp_ajax_dwm_test_webhook', array( $this, 'handle_test_webhook' ) );
-		add_action( 'wp_ajax_dwm_retry_delivery', array( $this, 'handle_retry_delivery' ) );
-		add_action( 'wp_ajax_dwm_clear_logs', array( $this, 'handle_clear_logs' ) );
+		add_action( 'wp_ajax_dragonwebhookmanager_save_webhook', array( $this, 'handle_save_webhook' ) );
+		add_action( 'wp_ajax_dragonwebhookmanager_delete_webhook', array( $this, 'handle_delete_webhook' ) );
+		add_action( 'wp_ajax_dragonwebhookmanager_toggle_webhook', array( $this, 'handle_toggle_webhook' ) );
+		add_action( 'wp_ajax_dragonwebhookmanager_test_webhook', array( $this, 'handle_test_webhook' ) );
+		add_action( 'wp_ajax_dragonwebhookmanager_retry_delivery', array( $this, 'handle_retry_delivery' ) );
+		add_action( 'wp_ajax_dragonwebhookmanager_clear_logs', array( $this, 'handle_clear_logs' ) );
 	}
 
 	/**
 	 * Save webhook (create or update)
 	 */
 	public function handle_save_webhook(): void {
-		check_ajax_referer( 'dwm_ajax_nonce', 'nonce' );
+		check_ajax_referer( 'dragonwebhookmanager_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
@@ -86,7 +86,7 @@ class Ajax {
 	 * Delete webhook
 	 */
 	public function handle_delete_webhook(): void {
-		check_ajax_referer( 'dwm_ajax_nonce', 'nonce' );
+		check_ajax_referer( 'dragonwebhookmanager_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
@@ -114,7 +114,7 @@ class Ajax {
 	 * Toggle webhook active status
 	 */
 	public function handle_toggle_webhook(): void {
-		check_ajax_referer( 'dwm_ajax_nonce', 'nonce' );
+		check_ajax_referer( 'dragonwebhookmanager_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
@@ -146,7 +146,7 @@ class Ajax {
 	 * Test webhook with sample data
 	 */
 	public function handle_test_webhook(): void {
-		check_ajax_referer( 'dwm_ajax_nonce', 'nonce' );
+		check_ajax_referer( 'dragonwebhookmanager_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
@@ -208,7 +208,7 @@ class Ajax {
 	 * Retry a failed delivery
 	 */
 	public function handle_retry_delivery(): void {
-		check_ajax_referer( 'dwm_ajax_nonce', 'nonce' );
+		check_ajax_referer( 'dragonwebhookmanager_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
@@ -263,7 +263,7 @@ class Ajax {
 	 * Clear all logs
 	 */
 	public function handle_clear_logs(): void {
-		check_ajax_referer( 'dwm_ajax_nonce', 'nonce' );
+		check_ajax_referer( 'dragonwebhookmanager_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );

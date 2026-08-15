@@ -17,7 +17,7 @@ class Logger {
 		global $wpdb;
 		$this->table = $wpdb->prefix . 'dwm_logs';
 
-		add_action( 'dwm_cleanup_logs', array( $this, 'cleanup_old_logs' ) );
+		add_action( 'dragonwebhookmanager_cleanup_logs', array( $this, 'cleanup_old_logs' ) );
 	}
 
 	/**
@@ -185,7 +185,7 @@ class Logger {
 	public function cleanup_old_logs(): void {
 		global $wpdb;
 
-		$retention_days = (int) get_option( 'dwm_log_retention_days', 7 );
+		$retention_days = (int) get_option( 'dragonwebhookmanager_log_retention_days', 7 );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Scheduled cleanup of plugin's custom table.
 		$wpdb->query(
