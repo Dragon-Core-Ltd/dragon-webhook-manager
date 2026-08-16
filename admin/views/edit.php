@@ -30,8 +30,8 @@ $dragonwebhookmanager_default_payload = '{
   "timestamp": "{{timestamp_iso}}"
 }';
 ?>
-<div class="wrap dwm-wrap">
-	<h1><?php echo esc_html( $dragonwebhookmanager_title ); ?></h1>
+<div class="wrap dragon-ui dwm-wrap">
+	<h1 class="dragon-title"><span class="dragon-mark" aria-hidden="true"></span><?php echo esc_html( $dragonwebhookmanager_title ); ?></h1>
 
 	<form id="dwm-webhook-form" class="dwm-form">
 		<?php if ( $dragonwebhookmanager_is_edit ) : ?>

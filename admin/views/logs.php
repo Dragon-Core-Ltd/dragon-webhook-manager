@@ -9,8 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
 ?>
-<div class="wrap dwm-wrap">
-	<h1 class="wp-heading-inline"><?php esc_html_e( 'Delivery Logs', 'dragon-webhook-manager' ); ?></h1>
+<div class="wrap dragon-ui dwm-wrap">
+	<h1 class="dragon-title wp-heading-inline"><span class="dragon-mark" aria-hidden="true"></span><?php esc_html_e( 'Delivery Logs', 'dragon-webhook-manager' ); ?></h1>
 	<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager' ) ); ?>" class="page-title-action">
 		<?php esc_html_e( 'Back to Webhooks', 'dragon-webhook-manager' ); ?>
 	</a>

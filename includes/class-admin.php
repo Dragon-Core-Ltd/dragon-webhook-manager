@@ -70,9 +70,16 @@ class Admin {
 		}
 
 		wp_enqueue_style(
+			'dragon-webhook-manager-dragon-ui',
+			DRAGONWEBHOOKMANAGER_PLUGIN_URL . 'admin/css/dragon-ui.css',
+			array(),
+			DRAGONWEBHOOKMANAGER_VERSION
+		);
+
+		wp_enqueue_style(
 			'dwm-admin',
 			DRAGONWEBHOOKMANAGER_PLUGIN_URL . 'admin/css/admin.css',
-			array(),
+			array( 'dragon-webhook-manager-dragon-ui' ),
 			DRAGONWEBHOOKMANAGER_VERSION
 		);
 
@@ -148,7 +155,7 @@ class Admin {
 			return;
 		}
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'Dragon Webhook Manager', 'dragon-webhook-manager' ) . '</h1>';
+		echo '<div class="wrap dragon-ui"><h1 class="dragon-title"><span class="dragon-mark" aria-hidden="true"></span>' . esc_html__( 'Dragon Webhook Manager', 'dragon-webhook-manager' ) . '</h1>';
 		echo '<nav class="nav-tab-wrapper">';
 		echo '<a href="' . esc_url( admin_url( 'tools.php?page=dragon-webhook-manager' ) ) . '" class="nav-tab">' . esc_html__( 'Webhooks', 'dragon-webhook-manager' ) . '</a>';
 

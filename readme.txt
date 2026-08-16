@@ -4,7 +4,7 @@ Tags: webhooks, automation, woocommerce, notifications, api
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,9 @@ The free version works alongside WooCommerce but doesn't have WooCommerce-specif
 4. Variable Reference - Available template variables
 
 == Changelog ==
+
+= 1.0.6 =
+* New look: the Dragon design system arrives — a consistent Dragon Core header, cleaner tables, and unified status colours. Purely visual; no behaviour changes.
 
 = 1.0.5 =
 * Fix: settings could be lost on a deactivate then reactivate update; the migration now carries each value before removing the old copy.
