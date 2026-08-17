@@ -13,3 +13,10 @@ Delivery logs live in your database with pruning. Webhook destinations receive t
 
 ## Dragon Webhook Manager Pro
 WooCommerce triggers (orders, products, stock), HMAC-SHA256 request signing so receivers can verify authenticity, and automatic retry with backoff for failed deliveries.
+
+## Uninstall
+Deleting the plugin keeps all its data by default, so a reinstall picks up where you left off. To remove everything on uninstall, opt in first:
+
+```
+wp option update dragonwebhookmanager_delete_data_on_uninstall 1
+```
