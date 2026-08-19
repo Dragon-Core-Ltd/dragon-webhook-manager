@@ -82,6 +82,17 @@ class Plugin {
 		$this->integration = new Integration( $this->webhook, $this->payload, $this->logger );
 	}
 
+	/**
+	 * Re-run dbDelta when the plugin updated without a deactivate/reactivate
+	 * cycle, so schema additions (like new indexes) reach existing installs.
+	 * The option is autoloaded, so the check costs nothing per request.
+	 */
+	public function maybe_upgrade(): void {
+		if ( get_option( 'dragonwebhookmanager_db_version' ) !== DRAGONWEBHOOKMANAGER_VERSION ) {
+			$this->create_tables();
+		}
+	}
+
 	public function activate(): void {
 		$this->create_tables();
 		$this->set_default_options();
@@ -126,7 +137,8 @@ class Plugin {
 			updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
 			KEY idx_trigger (trigger_event),
-			KEY idx_active (is_active)
+			KEY idx_active (is_active),
+			KEY idx_trigger_active (trigger_event, is_active)
 		) $charset_collate;";
 		dbDelta( $sql_webhooks );
 

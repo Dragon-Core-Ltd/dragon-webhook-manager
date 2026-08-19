@@ -4,7 +4,7 @@ Tags: webhooks, automation, woocommerce, notifications, api
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -111,14 +111,12 @@ The free version supports up to 10 webhooks with all WordPress core triggers. Up
 
 The free version works alongside WooCommerce but doesn't have WooCommerce-specific triggers. For order notifications, customer events, and inventory alerts, check out [Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro).
 
-== Screenshots ==
-
-1. Dashboard - View and manage all webhooks
-2. Create Webhook - Configure trigger, URL, and payload
-3. Delivery Logs - Monitor all webhook deliveries
-4. Variable Reference - Available template variables
-
 == Changelog ==
+
+= 1.0.8 =
+* Documentation: the privacy section now accurately describes where webhook data goes.
+* Performance: a composite index speeds up webhook lookups on every trigger; schema updates now apply without reactivating.
+* Accessibility: icon buttons are screen-reader labelled.
 
 = 1.0.7 =
 * Data safety: uninstalling the plugin no longer deletes its data unless you explicitly opt in first — a reinstall now picks up exactly where you left off.
@@ -161,8 +159,9 @@ Dragon Webhook Manager sends data from your WordPress site to external URLs that
 
 **Important:**
 * Data is only sent to webhook URLs that YOU configure
-* No data is sent to Dragon Core or any third parties
-* You are responsible for ensuring the external services you connect to comply with applicable privacy laws (GDPR, CCPA, etc.)
+* No data is sent to Dragon Core, and the plugin has no service of its own to send it to
+* Data goes only to the endpoints you configure — you choose every destination, and no webhook fires until you create one
+* You are responsible for reviewing the terms and privacy policy of any service you send data to, and for ensuring those transfers comply with applicable privacy laws (GDPR, CCPA, etc.)
 * Webhook delivery logs are stored locally in your WordPress database and automatically cleaned up after 7 days (configurable)
 
 For more information, visit [Dragon Core](https://dragoncore.ltd/).

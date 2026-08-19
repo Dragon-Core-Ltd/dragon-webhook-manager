@@ -17,6 +17,6 @@ WooCommerce triggers (orders, products, stock), HMAC-SHA256 request signing so r
 ## Uninstall
 Deleting the plugin keeps all its data by default, so a reinstall picks up where you left off. To remove everything on uninstall, opt in first:
 
-```
+```bash
 wp option update dragonwebhookmanager_delete_data_on_uninstall 1
 ```

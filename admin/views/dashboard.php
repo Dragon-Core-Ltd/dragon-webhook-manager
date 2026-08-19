@@ -88,12 +88,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<table class="wp-list-table widefat fixed striped dwm-webhooks-table">
 		<thead>
 			<tr>
-				<th class="column-status" style="width: 60px;"><?php esc_html_e( 'Status', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-name"><?php esc_html_e( 'Name', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-trigger"><?php esc_html_e( 'Trigger', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-url"><?php esc_html_e( 'URL', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-method" style="width: 80px;"><?php esc_html_e( 'Method', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-actions" style="width: 120px;"><?php esc_html_e( 'Actions', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-status" style="width: 60px;" scope="col"><?php esc_html_e( 'Status', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-name" scope="col"><?php esc_html_e( 'Name', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-trigger" scope="col"><?php esc_html_e( 'Trigger', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-url" scope="col"><?php esc_html_e( 'URL', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-method" style="width: 80px;" scope="col"><?php esc_html_e( 'Method', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-actions" style="width: 120px;" scope="col"><?php esc_html_e( 'Actions', 'dragon-webhook-manager' ); ?></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -113,7 +113,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<button type="button"
 								class="dwm-toggle-status <?php echo $dragonwebhookmanager_webhook['is_active'] ? 'is-active' : ''; ?>"
 								data-id="<?php echo esc_attr( $dragonwebhookmanager_webhook['id'] ); ?>"
-								title="<?php echo $dragonwebhookmanager_webhook['is_active'] ? esc_attr__( 'Active - Click to disable', 'dragon-webhook-manager' ) : esc_attr__( 'Inactive - Click to enable', 'dragon-webhook-manager' ); ?>">
+								title="<?php echo $dragonwebhookmanager_webhook['is_active'] ? esc_attr__( 'Active - Click to disable', 'dragon-webhook-manager' ) : esc_attr__( 'Inactive - Click to enable', 'dragon-webhook-manager' ); ?>"
+								aria-label="<?php echo $dragonwebhookmanager_webhook['is_active'] ? esc_attr__( 'Disable webhook', 'dragon-webhook-manager' ) : esc_attr__( 'Enable webhook', 'dragon-webhook-manager' ); ?>">
 								<span class="dwm-status-indicator"></span>
 							</button>
 						</td>
@@ -146,13 +147,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<td class="column-actions">
 							<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit&id=' . $dragonwebhookmanager_webhook['id'] ) ); ?>"
 								class="button button-small"
-								title="<?php esc_attr_e( 'Edit', 'dragon-webhook-manager' ); ?>">
+								title="<?php esc_attr_e( 'Edit', 'dragon-webhook-manager' ); ?>"
+								aria-label="<?php esc_attr_e( 'Edit webhook', 'dragon-webhook-manager' ); ?>">
 								<span class="dashicons dashicons-edit"></span>
 							</a>
 							<button type="button"
 								class="button button-small dwm-delete-webhook"
 								data-id="<?php echo esc_attr( $dragonwebhookmanager_webhook['id'] ); ?>"
-								title="<?php esc_attr_e( 'Delete', 'dragon-webhook-manager' ); ?>">
+								title="<?php esc_attr_e( 'Delete', 'dragon-webhook-manager' ); ?>"
+								aria-label="<?php esc_attr_e( 'Delete webhook', 'dragon-webhook-manager' ); ?>">
 								<span class="dashicons dashicons-trash"></span>
 							</button>
 						</td>

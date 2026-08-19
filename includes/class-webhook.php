@@ -21,19 +21,23 @@ class Webhook {
 	/**
 	 * Get all webhooks
 	 */
-	public function get_all( bool $active_only = false ): array {
+	public function get_all( bool $active_only = false, int $limit = 500 ): array {
 		global $wpdb;
+
+		// The free tier caps webhook count, but Pro is unlimited — a hard LIMIT
+		// keeps the dashboard render bounded on any install.
+		$limit = max( 1, $limit );
 
 		if ( $active_only ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
 			$results = $wpdb->get_results(
-				$wpdb->prepare( 'SELECT * FROM %i WHERE is_active = 1 ORDER BY created_at DESC', $this->table ),
+				$wpdb->prepare( 'SELECT * FROM %i WHERE is_active = 1 ORDER BY created_at DESC LIMIT %d', $this->table, $limit ),
 				ARRAY_A
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
 			$results = $wpdb->get_results(
-				$wpdb->prepare( 'SELECT * FROM %i ORDER BY created_at DESC', $this->table ),
+				$wpdb->prepare( 'SELECT * FROM %i ORDER BY created_at DESC LIMIT %d', $this->table, $limit ),
 				ARRAY_A
 			);
 		}

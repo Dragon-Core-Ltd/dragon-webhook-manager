@@ -62,20 +62,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<table class="wp-list-table widefat fixed striped dwm-logs-table">
 		<thead>
 			<tr>
-				<th class="column-webhook"><?php esc_html_e( 'Webhook', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-trigger"><?php esc_html_e( 'Trigger', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-status" style="width: 100px;"><?php esc_html_e( 'Status', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-response" style="width: 100px;"><?php esc_html_e( 'Response', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-duration" style="width: 100px;"><?php esc_html_e( 'Duration', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-time"><?php esc_html_e( 'Time', 'dragon-webhook-manager' ); ?></th>
-				<th class="column-actions" style="width: 80px;"><?php esc_html_e( 'Actions', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-webhook" scope="col"><?php esc_html_e( 'Webhook', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-trigger" scope="col"><?php esc_html_e( 'Trigger', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-status" style="width: 100px;" scope="col"><?php esc_html_e( 'Status', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-response" style="width: 100px;" scope="col"><?php esc_html_e( 'Response', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-duration" style="width: 100px;" scope="col"><?php esc_html_e( 'Duration', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-time" scope="col"><?php esc_html_e( 'Time', 'dragon-webhook-manager' ); ?></th>
+				<th class="column-actions" style="width: 80px;" scope="col"><?php esc_html_e( 'Actions', 'dragon-webhook-manager' ); ?></th>
 			</tr>
 		</thead>
 		<tbody>
 			<?php if ( empty( $dragonwebhookmanager_logs ) ) : ?>
 				<tr>
 					<td colspan="7" class="dwm-empty-state">
-						<p><?php esc_html_e( 'No delivery logs yet.', 'dragon-webhook-manager' ); ?></p>
+						<p><?php esc_html_e( 'No delivery logs yet. Deliveries are recorded here each time a webhook fires — use "Send Test" on a webhook to see one now.', 'dragon-webhook-manager' ); ?></p>
 					</td>
 				</tr>
 			<?php else : ?>
@@ -126,14 +126,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<button type="button"
 									class="button button-small dwm-retry-delivery"
 									data-log-id="<?php echo esc_attr( $dragonwebhookmanager_log['id'] ); ?>"
-									title="<?php esc_attr_e( 'Retry', 'dragon-webhook-manager' ); ?>">
+									title="<?php esc_attr_e( 'Retry', 'dragon-webhook-manager' ); ?>"
+									aria-label="<?php esc_attr_e( 'Retry delivery', 'dragon-webhook-manager' ); ?>">
 									<span class="dashicons dashicons-update"></span>
 								</button>
 							<?php endif; ?>
 							<button type="button"
 								class="button button-small dwm-view-log-details"
 								data-log='<?php echo esc_attr( wp_json_encode( $dragonwebhookmanager_log ) ); ?>'
-								title="<?php esc_attr_e( 'View Details', 'dragon-webhook-manager' ); ?>">
+								title="<?php esc_attr_e( 'View Details', 'dragon-webhook-manager' ); ?>"
+								aria-label="<?php esc_attr_e( 'View delivery details', 'dragon-webhook-manager' ); ?>">
 								<span class="dashicons dashicons-visibility"></span>
 							</button>
 						</td>
