@@ -1,10 +1,10 @@
 === Dragon Webhook Manager ===
-Contributors: dragoncore
+Contributors: dragoncoreltd
 Tags: webhooks, automation, woocommerce, notifications, api
 Requires at least: 6.2
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -112,6 +112,10 @@ The free version supports up to 10 webhooks with all WordPress core triggers. Up
 The free version works alongside WooCommerce but doesn't have WooCommerce-specific triggers. For order notifications, customer events, and inventory alerts, check out [Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro).
 
 == Changelog ==
+
+= 1.0.9 =
+* Compatibility: tested up to WordPress 7.1.
+* Housekeeping: corrected the contributor name in the plugin readme.
 
 = 1.0.8 =
 * Documentation: the privacy section now accurately describes where webhook data goes.
