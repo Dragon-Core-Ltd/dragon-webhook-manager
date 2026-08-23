@@ -74,10 +74,26 @@ class Ajax {
 			wp_send_json_error( array( 'message' => $message ) );
 		}
 
+		$webhook_id = $id ? $id : (int) $result;
+
+		/**
+		 * Fires after a webhook is created or updated.
+		 *
+		 * Add-ons (Dragon Webhook Manager Pro) persist their own per-webhook
+		 * settings — HMAC signing secret, auto-retry, delivery conditions —
+		 * on this action, keyed by webhook ID in their own metadata store.
+		 * They read the raw request fields they own from $_POST directly; the
+		 * nonce and capability were already verified above.
+		 *
+		 * @param int   $webhook_id Saved webhook ID.
+		 * @param array $data       Sanitized core webhook data that was stored.
+		 */
+		do_action( 'dragonwebhookmanager_webhook_saved', $webhook_id, $data );
+
 		wp_send_json_success(
 			array(
 				'message'    => __( 'Webhook saved successfully.', 'dragon-webhook-manager' ),
-				'webhook_id' => $id ? $id : $result,
+				'webhook_id' => $webhook_id,
 			)
 		);
 	}
