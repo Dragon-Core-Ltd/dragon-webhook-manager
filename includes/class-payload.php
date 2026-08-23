@@ -18,12 +18,33 @@ class Payload {
 		// Get all available variables
 		$variables = $this->get_variables( $context );
 
-		// Replace double-brace template placeholders.
+		// Replace double-brace template placeholders. Values are JSON-escaped so
+		// that user-controlled content — a comment body or author name, which an
+		// anonymous visitor controls — cannot break out of its surrounding quotes
+		// and inject structure into the JSON payload delivered to the endpoint.
 		return preg_replace_callback(
 			'/\{\{(\w+)\}\}/',
 			function ( $matches ) use ( $variables ) {
 				$key = $matches[1];
-				return $variables[ $key ] ?? $matches[0];
+
+				if ( ! array_key_exists( $key, $variables ) ) {
+					return $matches[0];
+				}
+
+				$value = $variables[ $key ];
+
+				// Numbers carry no JSON metacharacters and are usually written
+				// unquoted in the template, so pass them through unchanged.
+				if ( is_int( $value ) || is_float( $value ) ) {
+					return (string) $value;
+				}
+
+				// Escape the string's contents for a double-quoted JSON context.
+				// wp_json_encode wraps it in quotes; the template already supplies
+				// them, so strip the outer pair.
+				$encoded = wp_json_encode( (string) $value );
+
+				return is_string( $encoded ) ? substr( $encoded, 1, -1 ) : '';
 			},
 			$template
 		);
