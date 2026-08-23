@@ -263,13 +263,16 @@ class Webhook {
 		$response = wp_remote_request(
 			$url,
 			array(
-				'method'      => $webhook['method'] ?? 'POST',
-				'headers'     => $headers,
-				'body'        => $payload,
-				'timeout'     => $timeout,
+				'method'             => $webhook['method'] ?? 'POST',
+				'headers'            => $headers,
+				'body'               => $payload,
+				'timeout'            => $timeout,
 				// Do not follow redirects: a 30x to an internal host would be
 				// re-resolved unpinned and reopen the SSRF hole.
-				'redirection' => 0,
+				'redirection'        => 0,
+				// A misbehaving endpoint returning a huge body would otherwise be
+				// read into memory and stored per delivery; cap it.
+				'limit_response_size' => 64 * KB_IN_BYTES,
 			)
 		);
 
@@ -291,6 +294,12 @@ class Webhook {
 
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
+
+		// Keep only a bounded slice of the response for the log, regardless of
+		// what the transport returned.
+		if ( strlen( $response_body ) > 64 * KB_IN_BYTES ) {
+			$response_body = substr( $response_body, 0, 64 * KB_IN_BYTES );
+		}
 
 		if ( $response_code >= 300 && $response_code < 400 ) {
 			// Redirects are intentionally not followed (SSRF), so explain the

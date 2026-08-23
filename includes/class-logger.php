@@ -34,7 +34,7 @@ class Logger {
 				'trigger_event'   => $webhook['trigger_event'],
 				'request_url'     => $webhook['url'],
 				'request_method'  => $webhook['method'],
-				'request_headers' => $webhook['headers'],
+				'request_headers' => $this->redact_headers( $webhook['headers'] ?? '' ),
 				'request_body'    => $payload,
 				'status'          => 'pending',
 			),
@@ -42,6 +42,31 @@ class Logger {
 		);
 
 		return $wpdb->insert_id;
+	}
+
+	/**
+	 * Redact secret-bearing request headers before they are stored/displayed.
+	 *
+	 * Admin-configured Authorization / API-key headers would otherwise sit in
+	 * the log table (and the logs-table DOM) in cleartext for every delivery.
+	 * The HMAC signature header is left intact — it is not a secret.
+	 *
+	 * @param string|array $headers Header map or its JSON encoding.
+	 * @return string JSON-encoded headers with secrets masked.
+	 */
+	private function redact_headers( $headers ): string {
+		$decoded = is_array( $headers ) ? $headers : json_decode( (string) $headers, true );
+		if ( ! is_array( $decoded ) ) {
+			return is_string( $headers ) ? $headers : (string) wp_json_encode( array() );
+		}
+
+		foreach ( $decoded as $name => $value ) {
+			if ( preg_match( '/authorization|cookie|api[-_]?key|token|secret|password/i', (string) $name ) ) {
+				$decoded[ $name ] = '[redacted]';
+			}
+		}
+
+		return (string) wp_json_encode( $decoded );
 	}
 
 	/**
