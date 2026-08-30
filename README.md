@@ -4,15 +4,15 @@
 
 Requires WordPress 6.2+ · PHP 8.0+ · [GPL-2.0-or-later](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Part of the [Dragon Core](https://dragoncore.ltd) plugin family — download it free from the [plugin page](https://dragoncore.ltd/plugins/dragon-webhook-manager).
+Part of the [Dragon Core](https://dragoncore.ltd) plugin family - download it free from the [plugin page](https://dragoncore.ltd/plugins/dragon-webhook-manager).
 
 ## Features
 
-- **Slack/Discord notifications** — Get notified when posts are published or orders come in
-- **Zapier/Make integrations** — Trigger complex workflows automatically
-- **CRM updates** — Sync user registrations and customer data
-- **Order processing** — Notify fulfillment systems when orders are placed (Pro)
-- **Inventory alerts** — Get notified when stock runs low (Pro)
+- **Slack/Discord notifications** - Get notified when posts are published or comments arrive
+- **Zapier/Make integrations** - Trigger complex workflows automatically
+- **CRM updates** - Sync user registrations and profile data
+- **Delivery logs and settings** - Every delivery is logged; choose the retention period and delivery timeout
+- **Extensible** - Other plugins can register their own triggers through the `dragonwebhookmanager_triggers` filter
 
 ## Installation
 
@@ -26,7 +26,7 @@ Part of the [Dragon Core](https://dragoncore.ltd) plugin family — download it 
 
 ## Dragon Webhook Manager Pro
 
-The free plugin is complete on its own. [Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro) adds advanced features on top — see the [Pro plugin page](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro) for details.
+The free plugin is complete on its own. [Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro) adds advanced features on top - see the [Pro plugin page](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro) for details.
 
 ## License
 

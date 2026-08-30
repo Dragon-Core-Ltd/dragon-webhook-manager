@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix.
 
 $dragonwebhookmanager_is_edit = ! empty( $dragonwebhookmanager_webhook );
 $dragonwebhookmanager_title   = $dragonwebhookmanager_is_edit ? __( 'Edit Webhook', 'dragon-webhook-manager' ) : __( 'Add Webhook', 'dragon-webhook-manager' );
@@ -20,6 +20,24 @@ if ( $dragonwebhookmanager_is_edit && ! empty( $dragonwebhookmanager_webhook['he
 		foreach ( $dragonwebhookmanager_headers as $dragonwebhookmanager_key => $dragonwebhookmanager_value ) {
 			$dragonwebhookmanager_headers_display .= $dragonwebhookmanager_key . ': ' . $dragonwebhookmanager_value . "\n";
 		}
+	}
+}
+
+// A saved trigger that is no longer registered stays selectable so the
+// webhook can still be edited without silently changing its event.
+$dragonwebhookmanager_current_trigger = (string) ( $dragonwebhookmanager_webhook['trigger_event'] ?? '' );
+if ( '' !== $dragonwebhookmanager_current_trigger ) {
+	$dragonwebhookmanager_trigger_known = false;
+	foreach ( $dragonwebhookmanager_triggers as $dragonwebhookmanager_events ) {
+		if ( isset( $dragonwebhookmanager_events[ $dragonwebhookmanager_current_trigger ] ) ) {
+			$dragonwebhookmanager_trigger_known = true;
+			break;
+		}
+	}
+	if ( ! $dragonwebhookmanager_trigger_known ) {
+		$dragonwebhookmanager_triggers[ __( 'Other', 'dragon-webhook-manager' ) ][ $dragonwebhookmanager_current_trigger ] = array(
+			'label' => $dragonwebhookmanager_current_trigger,
+		);
 	}
 }
 
@@ -71,45 +89,28 @@ $dragonwebhookmanager_default_payload = '{
 					<label for="dwm-trigger"><?php esc_html_e( 'Trigger Event', 'dragon-webhook-manager' ); ?> <span class="required">*</span></label>
 				</th>
 				<td>
-					<?php
-					// Check if Pro triggers are enabled.
-					$dragonwebhookmanager_pro_enabled = apply_filters( 'dragonwebhookmanager_pro_triggers_enabled', false );
-					?>
 					<select id="dwm-trigger" name="trigger_event" class="regular-text" required>
 						<option value=""><?php esc_html_e( '-- Select Trigger --', 'dragon-webhook-manager' ); ?></option>
 						<?php foreach ( $dragonwebhookmanager_triggers as $dragonwebhookmanager_category => $dragonwebhookmanager_events ) : ?>
 							<optgroup label="<?php echo esc_attr( $dragonwebhookmanager_category ); ?>">
 								<?php foreach ( $dragonwebhookmanager_events as $dragonwebhookmanager_key => $dragonwebhookmanager_trigger_data ) : ?>
-									<?php
-									$dragonwebhookmanager_is_pro   = ! empty( $dragonwebhookmanager_trigger_data['pro'] );
-									$dragonwebhookmanager_disabled = $dragonwebhookmanager_is_pro && ! $dragonwebhookmanager_pro_enabled;
-									$dragonwebhookmanager_label    = $dragonwebhookmanager_trigger_data['label'] . ( $dragonwebhookmanager_disabled ? ' [PRO]' : '' );
-									?>
 									<option value="<?php echo esc_attr( $dragonwebhookmanager_key ); ?>"
-										<?php selected( $dragonwebhookmanager_webhook['trigger_event'] ?? '', $dragonwebhookmanager_key ); ?>
-										<?php disabled( $dragonwebhookmanager_disabled, true ); ?>>
-										<?php echo esc_html( $dragonwebhookmanager_label ); ?>
+										<?php selected( $dragonwebhookmanager_current_trigger, $dragonwebhookmanager_key ); ?>>
+										<?php echo esc_html( $dragonwebhookmanager_trigger_data['label'] ); ?>
 									</option>
 								<?php endforeach; ?>
 							</optgroup>
 						<?php endforeach; ?>
 					</select>
-					<?php if ( ! $dragonwebhookmanager_pro_enabled ) : ?>
-					<p class="description dwm-pro-teaser">
-						<?php
-						printf(
-							/* translators: %s: upgrade link */
-							esc_html__( 'Need WooCommerce triggers? %s', 'dragon-webhook-manager' ),
-							'<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro" target="_blank">' . esc_html__( 'Upgrade to Pro', 'dragon-webhook-manager' ) . '</a>'
-						);
-						?>
-					</p>
-					<?php endif; ?>
 				</td>
 			</tr>
 
 			<?php
-			// Allow Pro to add conditions field after trigger.
+			/**
+			 * Fires after the trigger row so other plugins can add form rows.
+			 *
+			 * @param array $webhook Webhook being edited (empty for a new one).
+			 */
 			do_action( 'dragonwebhookmanager_webhook_form_after_trigger', $dragonwebhookmanager_webhook ?? array() );
 			?>
 
@@ -169,7 +170,11 @@ Authorization: Bearer your-token"><?php echo esc_textarea( $dragonwebhookmanager
 			</tr>
 
 			<?php
-			// Allow Pro to add signature and retry fields after headers.
+			/**
+			 * Fires after the headers row so other plugins can add form rows.
+			 *
+			 * @param array $webhook Webhook being edited (empty for a new one).
+			 */
 			do_action( 'dragonwebhookmanager_webhook_form_after_headers', $dragonwebhookmanager_webhook ?? array() );
 			?>
 

@@ -1,0 +1,516 @@
+# Copyright (C) 2026 Dragon Core
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Dragon Webhook Manager 1.0.11\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dragon-webhook-manager\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-30T19:06:42+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: dragon-webhook-manager\n"
+
+#. Plugin Name of the plugin
+#: dragon-webhook-manager.php
+#: admin/views/dashboard.php:13
+#: includes/class-admin.php:33
+#: includes/class-admin.php:171
+msgid "Dragon Webhook Manager"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: dragon-webhook-manager.php
+msgid "https://dragoncore.ltd/plugins/dragon-webhook-manager"
+msgstr ""
+
+#. Description of the plugin
+#: dragon-webhook-manager.php
+msgid "Visual interface for creating outgoing webhooks on any WordPress event. Build automations without code."
+msgstr ""
+
+#. Author of the plugin
+#: dragon-webhook-manager.php
+msgid "Dragon Core"
+msgstr ""
+
+#. Author URI of the plugin
+#: dragon-webhook-manager.php
+msgid "https://dragoncore.ltd"
+msgstr ""
+
+#: admin/views/dashboard.php:15
+#: admin/views/edit.php:13
+msgid "Add Webhook"
+msgstr ""
+
+#: admin/views/dashboard.php:26
+#: admin/views/dashboard.php:40
+#: includes/class-admin.php:173
+msgid "Webhooks"
+msgstr ""
+
+#: admin/views/dashboard.php:44
+msgid "Deliveries Today"
+msgstr ""
+
+#: admin/views/dashboard.php:48
+msgid "Success Rate"
+msgstr ""
+
+#: admin/views/dashboard.php:52
+msgid "Avg Response"
+msgstr ""
+
+#: admin/views/dashboard.php:59
+msgid "Dragon Webhook Manager Pro"
+msgstr ""
+
+#: admin/views/dashboard.php:60
+msgid "Adds WooCommerce triggers, HMAC request signing, automatic retry with backoff, and conditional delivery rules."
+msgstr ""
+
+#: admin/views/dashboard.php:63
+msgid "Learn more"
+msgstr ""
+
+#: admin/views/dashboard.php:72
+#: admin/views/edit.php:214
+#: admin/views/logs.php:67
+msgid "Status"
+msgstr ""
+
+#: admin/views/dashboard.php:73
+#: admin/views/edit.php:62
+msgid "Name"
+msgstr ""
+
+#: admin/views/dashboard.php:74
+#: admin/views/logs.php:66
+msgid "Trigger"
+msgstr ""
+
+#: admin/views/dashboard.php:75
+msgid "URL"
+msgstr ""
+
+#: admin/views/dashboard.php:76
+msgid "Method"
+msgstr ""
+
+#: admin/views/dashboard.php:77
+#: admin/views/logs.php:71
+msgid "Actions"
+msgstr ""
+
+#: admin/views/dashboard.php:84
+msgid "No webhooks created yet."
+msgstr ""
+
+#: admin/views/dashboard.php:86
+msgid "Create Your First Webhook"
+msgstr ""
+
+#: admin/views/dashboard.php:97
+msgid "Active - Click to disable"
+msgstr ""
+
+#: admin/views/dashboard.php:97
+msgid "Inactive - Click to enable"
+msgstr ""
+
+#: admin/views/dashboard.php:98
+msgid "Disable webhook"
+msgstr ""
+
+#: admin/views/dashboard.php:98
+msgid "Enable webhook"
+msgstr ""
+
+#: admin/views/dashboard.php:128
+msgid "Edit"
+msgstr ""
+
+#: admin/views/dashboard.php:129
+msgid "Edit webhook"
+msgstr ""
+
+#: admin/views/dashboard.php:135
+msgid "Delete"
+msgstr ""
+
+#: admin/views/dashboard.php:136
+msgid "Delete webhook"
+msgstr ""
+
+#: admin/views/dashboard.php:148
+msgid "View Delivery Logs"
+msgstr ""
+
+#: admin/views/dashboard.php:152
+#: admin/views/settings.php:13
+#: dragon-webhook-manager.php:78
+msgid "Settings"
+msgstr ""
+
+#: admin/views/edit.php:13
+msgid "Edit Webhook"
+msgstr ""
+
+#: admin/views/edit.php:38
+msgid "Other"
+msgstr ""
+
+#: admin/views/edit.php:71
+msgid "A descriptive name for this webhook."
+msgstr ""
+
+#: admin/views/edit.php:77
+msgid "Description"
+msgstr ""
+
+#: admin/views/edit.php:89
+msgid "Trigger Event"
+msgstr ""
+
+#: admin/views/edit.php:93
+msgid "-- Select Trigger --"
+msgstr ""
+
+#: admin/views/edit.php:119
+msgid "Webhook URL"
+msgstr ""
+
+#: admin/views/edit.php:134
+msgid "HTTP Method"
+msgstr ""
+
+#: admin/views/edit.php:159
+msgid "Headers"
+msgstr ""
+
+#: admin/views/edit.php:168
+msgid "One header per line in \"Key: Value\" format."
+msgstr ""
+
+#: admin/views/edit.php:183
+msgid "Payload Template"
+msgstr ""
+
+#: admin/views/edit.php:192
+msgid "Available Variables:"
+msgstr ""
+
+#: admin/views/edit.php:200
+msgid "Click to copy"
+msgstr ""
+
+#: admin/views/edit.php:223
+msgid "Active (webhook will fire on trigger)"
+msgstr ""
+
+#: admin/views/edit.php:231
+msgid "Update Webhook"
+msgstr ""
+
+#: admin/views/edit.php:231
+msgid "Create Webhook"
+msgstr ""
+
+#: admin/views/edit.php:234
+msgid "Test Webhook"
+msgstr ""
+
+#: admin/views/edit.php:237
+msgid "Cancel"
+msgstr ""
+
+#: admin/views/edit.php:245
+msgid "Test Result"
+msgstr ""
+
+#: admin/views/edit.php:247
+#: admin/views/logs.php:169
+msgid "Close"
+msgstr ""
+
+#: admin/views/logs.php:13
+msgid "Delivery Logs"
+msgstr ""
+
+#: admin/views/logs.php:15
+#: admin/views/settings.php:15
+msgid "Back to Webhooks"
+msgstr ""
+
+#: admin/views/logs.php:23
+msgid "Total Deliveries"
+msgstr ""
+
+#: admin/views/logs.php:27
+msgid "Successful"
+msgstr ""
+
+#: admin/views/logs.php:31
+msgid "Failed"
+msgstr ""
+
+#: admin/views/logs.php:35
+msgid "Avg Duration"
+msgstr ""
+
+#: admin/views/logs.php:44
+msgid "Filter by webhook:"
+msgstr ""
+
+#: admin/views/logs.php:46
+msgid "All Webhooks"
+msgstr ""
+
+#: admin/views/logs.php:54
+msgid "Filter"
+msgstr ""
+
+#: admin/views/logs.php:57
+msgid "Clear All Logs"
+msgstr ""
+
+#: admin/views/logs.php:65
+msgid "Webhook"
+msgstr ""
+
+#: admin/views/logs.php:68
+#: admin/views/logs.php:161
+msgid "Response"
+msgstr ""
+
+#: admin/views/logs.php:69
+msgid "Duration"
+msgstr ""
+
+#: admin/views/logs.php:70
+msgid "Time"
+msgstr ""
+
+#: admin/views/logs.php:78
+msgid "No delivery logs yet. Deliveries are recorded here each time a webhook fires — use \"Send Test\" on a webhook to see one now."
+msgstr ""
+
+#: admin/views/logs.php:90
+msgid "(deleted)"
+msgstr ""
+
+#: admin/views/logs.php:116
+msgid "ago"
+msgstr ""
+
+#: admin/views/logs.php:126
+msgid "Retry"
+msgstr ""
+
+#: admin/views/logs.php:127
+msgid "Retry delivery"
+msgstr ""
+
+#: admin/views/logs.php:134
+msgid "View Details"
+msgstr ""
+
+#: admin/views/logs.php:135
+msgid "View delivery details"
+msgstr ""
+
+#: admin/views/logs.php:149
+msgid "Delivery Details"
+msgstr ""
+
+#: admin/views/logs.php:152
+msgid "Request"
+msgstr ""
+
+#: admin/views/logs.php:153
+msgid "URL:"
+msgstr ""
+
+#: admin/views/logs.php:154
+msgid "Method:"
+msgstr ""
+
+#: admin/views/logs.php:155
+msgid "Headers:"
+msgstr ""
+
+#: admin/views/logs.php:157
+#: admin/views/logs.php:165
+msgid "Body:"
+msgstr ""
+
+#: admin/views/logs.php:162
+msgid "Status:"
+msgstr ""
+
+#: admin/views/logs.php:163
+msgid "Duration:"
+msgstr ""
+
+#: admin/views/logs.php:164
+msgid "Error:"
+msgstr ""
+
+#: admin/views/settings.php:27
+msgid "Log retention"
+msgstr ""
+
+#: admin/views/settings.php:38
+msgid "days"
+msgstr ""
+
+#: admin/views/settings.php:39
+msgid "Delivery logs older than this are removed by the daily cleanup. 1 to 365 days."
+msgstr ""
+
+#: admin/views/settings.php:45
+msgid "Delivery timeout"
+msgstr ""
+
+#: admin/views/settings.php:56
+msgid "seconds"
+msgstr ""
+
+#: admin/views/settings.php:57
+msgid "How long to wait for the endpoint to respond before a delivery is marked failed. 5 to 120 seconds."
+msgstr ""
+
+#: admin/views/settings.php:62
+msgid "Uninstall"
+msgstr ""
+
+#: admin/views/settings.php:70
+msgid "Delete all webhooks, logs, and settings when the plugin is uninstalled"
+msgstr ""
+
+#: admin/views/settings.php:72
+msgid "Leave unchecked to keep your data so a reinstall picks up where you left off."
+msgstr ""
+
+#: includes/class-admin.php:34
+msgid "Webhook Manager"
+msgstr ""
+
+#: includes/class-admin.php:112
+msgid "Are you sure you want to delete this webhook?"
+msgstr ""
+
+#: includes/class-admin.php:113
+msgid "Are you sure you want to clear all logs?"
+msgstr ""
+
+#: includes/class-admin.php:114
+#: includes/class-ajax.php:94
+msgid "Webhook saved successfully."
+msgstr ""
+
+#: includes/class-admin.php:115
+#: includes/class-ajax.php:125
+msgid "Webhook deleted."
+msgstr ""
+
+#: includes/class-admin.php:116
+#: includes/class-ajax.php:154
+msgid "Webhook status updated."
+msgstr ""
+
+#: includes/class-admin.php:117
+msgid "Test webhook sent."
+msgstr ""
+
+#: includes/class-admin.php:118
+#: includes/class-ajax.php:289
+msgid "Logs cleared."
+msgstr ""
+
+#: includes/class-admin.php:119
+msgid "An error occurred."
+msgstr ""
+
+#: includes/class-admin.php:127
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: includes/class-ajax.php:38
+#: includes/class-ajax.php:107
+#: includes/class-ajax.php:135
+#: includes/class-ajax.php:167
+#: includes/class-ajax.php:229
+#: includes/class-ajax.php:284
+msgid "Permission denied."
+msgstr ""
+
+#: includes/class-ajax.php:56
+msgid "Name, trigger, and URL are required."
+msgstr ""
+
+#: includes/class-ajax.php:61
+msgid "Invalid URL format."
+msgstr ""
+
+#: includes/class-ajax.php:72
+msgid "Failed to update webhook."
+msgstr ""
+
+#: includes/class-ajax.php:73
+msgid "Failed to create webhook."
+msgstr ""
+
+#: includes/class-ajax.php:113
+#: includes/class-ajax.php:141
+msgid "Invalid webhook ID."
+msgstr ""
+
+#: includes/class-ajax.php:122
+msgid "Failed to delete webhook."
+msgstr ""
+
+#: includes/class-ajax.php:147
+msgid "Failed to toggle webhook."
+msgstr ""
+
+#: includes/class-ajax.php:189
+msgid "URL is required."
+msgstr ""
+
+#: includes/class-ajax.php:204
+msgid "Test webhook sent successfully!"
+msgstr ""
+
+#: includes/class-ajax.php:213
+msgid "Webhook delivery failed."
+msgstr ""
+
+#: includes/class-ajax.php:237
+msgid "Log not found."
+msgstr ""
+
+#: includes/class-ajax.php:243
+msgid "Webhook not found."
+msgstr ""
+
+#: includes/class-ajax.php:263
+msgid "Retry successful!"
+msgstr ""
+
+#: includes/class-ajax.php:270
+msgid "Retry failed."
+msgstr ""
+
+#: includes/class-webhook.php:219
+msgid "Requests to internal or private IP addresses are not allowed."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: includes/class-webhook.php:301
+msgid "HTTP %d: the endpoint redirected, and redirects are not followed. Use the final URL directly."
+msgstr ""

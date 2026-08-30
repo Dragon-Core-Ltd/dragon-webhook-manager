@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix.
 ?>
 <div class="wrap dragon-ui dwm-wrap">
 	<h1 class="dragon-title wp-heading-inline"><span class="dragon-mark" aria-hidden="true"></span><?php esc_html_e( 'Delivery Logs', 'dragon-webhook-manager' ); ?></h1>
@@ -91,10 +91,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<?php endif; ?>
 						</td>
 						<td class="column-trigger">
-							<?php
-							$dragonwebhookmanager_triggers = \DragonWebhookManager\Triggers::TRIGGERS;
-							echo esc_html( $dragonwebhookmanager_triggers[ $dragonwebhookmanager_log['trigger_event'] ]['label'] ?? $dragonwebhookmanager_log['trigger_event'] );
-							?>
+							<?php echo esc_html( $dragonwebhookmanager_triggers[ $dragonwebhookmanager_log['trigger_event'] ]['label'] ?? $dragonwebhookmanager_log['trigger_event'] ); ?>
 						</td>
 						<td class="column-status">
 							<span class="dwm-status-badge dwm-status-<?php echo esc_attr( $dragonwebhookmanager_log['status'] ); ?>">

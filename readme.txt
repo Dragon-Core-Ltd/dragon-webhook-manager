@@ -1,10 +1,10 @@
 === Dragon Webhook Manager ===
 Contributors: dragoncoreltd
-Tags: webhooks, automation, woocommerce, notifications, api
+Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.10
+Stable tag: 1.0.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,11 +14,9 @@ Connect your WordPress and WooCommerce store to any service with webhooks. The s
 
 Dragon Webhook Manager lets you send HTTP requests to external services whenever specific events occur on your WordPress site. Perfect for:
 
-* **Slack/Discord notifications** - Get notified when posts are published or orders come in
+* **Slack/Discord notifications** - Get notified when posts are published or comments arrive
 * **Zapier/Make integrations** - Trigger complex workflows automatically
-* **CRM updates** - Sync user registrations and customer data
-* **Order processing** - Notify fulfillment systems when orders are placed (Pro)
-* **Inventory alerts** - Get notified when stock runs low (Pro)
+* **CRM updates** - Sync user registrations and profile data
 
 = Features =
 
@@ -28,6 +26,8 @@ Dragon Webhook Manager lets you send HTTP requests to external services whenever
 * **Delivery Logs** - Track every webhook with request/response details
 * **Test Button** - Verify webhooks before going live
 * **Retry Failed** - One-click retry for failed deliveries
+* **Settings** - Choose how long delivery logs are kept and how long to wait for an endpoint
+* **Extensible** - Other plugins can register their own triggers through the `dragonwebhookmanager_triggers` filter
 
 = Supported Triggers =
 
@@ -61,15 +61,10 @@ Use variables in your payload to include dynamic data:
 **Users:** `{{user_id}}`, `{{user_email}}`, `{{user_display_name}}`
 **Comments:** `{{comment_id}}`, `{{comment_author}}`, `{{comment_content}}`
 
-= Free Version Limits =
-
-The free version supports up to 10 webhooks with all WordPress core triggers. Need WooCommerce integration? Check out Dragon Webhook Manager Pro.
-
 = Pro Features =
 
-**[Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro)** adds:
+The free plugin is complete on its own: create as many webhooks as you need on every WordPress core trigger. **[Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro)** adds:
 
-* **Unlimited webhooks**
 * **20+ WooCommerce triggers:**
   * Orders: created, paid, completed, cancelled, refunded
   * Customers: registered, updated, deleted
@@ -78,6 +73,8 @@ The free version supports up to 10 webhooks with all WordPress core triggers. Ne
 * **Conditional logic** - Only send when order_total > $100
 * **HMAC signing** - Secure your webhooks with signatures
 * **Auto-retry** - Automatic retry with exponential backoff
+
+WooCommerce order processing and inventory alerts are covered by these triggers.
 
 == Installation ==
 
@@ -103,15 +100,25 @@ Yes! The Delivery Logs page shows every webhook delivery with full request/respo
 
 Failed deliveries are logged with the error message. You can retry them manually from the logs page.
 
-= Are there limits on the free version? =
+= How many webhooks can I create? =
 
-The free version supports up to 10 webhooks with all WordPress core triggers. Upgrade to Pro for unlimited webhooks, WooCommerce triggers, and additional features.
+As many as you need. There is no cap on the number of webhooks.
+
+= How long are delivery logs kept? =
+
+Seven days by default. Change the retention period (1 to 365 days) and the delivery timeout (5 to 120 seconds) under Tools -> Webhook Manager -> Settings.
 
 = Can I use this with WooCommerce? =
 
-The free version works alongside WooCommerce but doesn't have WooCommerce-specific triggers. For order notifications, customer events, and inventory alerts, check out [Dragon Webhook Manager Pro](https://dragoncore.ltd/plugins/dragon-webhook-manager-pro).
+The plugin works alongside WooCommerce but ships no WooCommerce-specific triggers of its own. Other plugins can register additional triggers through the `dragonwebhookmanager_triggers` filter; see the Pro Features section above for an add-on that does.
 
 == Changelog ==
+
+= 1.0.11 =
+* Removed the cap on the number of webhooks - create as many as you need.
+* The trigger dropdown now lists only triggers that can actually fire on your site; other plugins can register more through the `dragonwebhookmanager_triggers` filter.
+* New Settings screen (Tools -> Webhook Manager -> Settings): log retention (1 to 365 days), delivery timeout (5 to 120 seconds), and the delete-data-on-uninstall opt-in.
+* Removed the License tab from the free plugin.
 
 = 1.0.9 =
 * Compatibility: tested up to WordPress 7.1.
@@ -135,7 +142,7 @@ The free version works alongside WooCommerce but doesn't have WooCommerce-specif
 * Renamed all option, hook, function and constant prefixes to the unique `dragonwebhookmanager_` / `DRAGONWEBHOOKMANAGER_` prefix. Existing settings are migrated automatically on update; configured webhooks and delivery logs are unaffected.
 
 = 1.0.3 =
-* Add the integration API that Dragon Webhook Manager Pro uses, so Pro's automatic retry and HMAC request signing work correctly.
+* Add the integration API for add-ons (re-delivery and logging hooks), so automatic retry and request signing add-ons work correctly.
 
 = 1.0.2 =
 * Security: pin each delivery to the IP address that passed the safety check, so a DNS change between the check and the request cannot redirect it to an internal host (DNS-rebinding).
@@ -166,11 +173,14 @@ Dragon Webhook Manager sends data from your WordPress site to external URLs that
 * No data is sent to Dragon Core, and the plugin has no service of its own to send it to
 * Data goes only to the endpoints you configure — you choose every destination, and no webhook fires until you create one
 * You are responsible for reviewing the terms and privacy policy of any service you send data to, and for ensuring those transfers comply with applicable privacy laws (GDPR, CCPA, etc.)
-* Webhook delivery logs are stored locally in your WordPress database and automatically cleaned up after 7 days (configurable)
+* Webhook delivery logs are stored locally in your WordPress database and automatically cleaned up after 7 days (configurable under Settings, 1 to 365 days)
 
 For more information, visit [Dragon Core](https://dragoncore.ltd/).
 
 == Upgrade Notice ==
+
+= 1.0.11 =
+Removes the webhook cap and adds a Settings screen for log retention and delivery timeout. Existing webhooks and logs are unaffected.
 
 = 1.0.0 =
 Initial release of Dragon Webhook Manager.

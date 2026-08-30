@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Admin {
 
+	/**
+	 * Settings group used by the options form.
+	 */
+	private const SETTINGS_GROUP = 'dragonwebhookmanager_settings';
+
 	private Webhook $webhook;
 	private Logger $logger;
 
@@ -19,39 +24,8 @@ class Admin {
 		$this->logger  = $logger;
 
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-
-		// Add License tab (Pro can override the content).
-		add_filter( 'dragonwebhookmanager_admin_tabs', array( $this, 'add_license_tab' ), 5 );
-		add_action( 'dragonwebhookmanager_admin_tab_license', array( $this, 'render_license_upsell' ), 100 );
-	}
-
-	/**
-	 * Add license tab to admin navigation.
-	 *
-	 * @param array $tabs Existing tabs.
-	 * @return array
-	 */
-	public function add_license_tab( array $tabs ): array {
-		// Only add if not already added by Pro.
-		if ( ! isset( $tabs['license'] ) ) {
-			$tabs['license'] = __( 'License', 'dragon-webhook-manager' );
-		}
-		return $tabs;
-	}
-
-	/**
-	 * Render license upsell (fallback when Pro not installed/licensed).
-	 * Pro plugin renders at priority 10, this runs at 100 as fallback.
-	 */
-	public function render_license_upsell(): void {
-		// Skip if Pro already rendered the license tab.
-
-		if ( apply_filters( 'dragonwebhookmanager_pro_triggers_enabled', false ) ) {
-			return;
-		}
-
-		include DRAGONWEBHOOKMANAGER_PLUGIN_DIR . 'admin/views/license-upsell.php';
 	}
 
 	public function add_admin_menu(): void {
@@ -61,6 +35,43 @@ class Admin {
 			'manage_options',
 			'dragon-webhook-manager',
 			array( $this, 'render_dashboard_page' )
+		);
+	}
+
+	/**
+	 * Register the options edited on the settings view.
+	 */
+	public function register_settings(): void {
+		register_setting(
+			self::SETTINGS_GROUP,
+			'dragonwebhookmanager_log_retention_days',
+			array(
+				'type'              => 'integer',
+				'default'           => 7,
+				'sanitize_callback' => array( Plugin::class, 'sanitize_retention_days' ),
+			)
+		);
+
+		register_setting(
+			self::SETTINGS_GROUP,
+			'dragonwebhookmanager_default_timeout',
+			array(
+				'type'              => 'integer',
+				'default'           => 30,
+				'sanitize_callback' => array( Plugin::class, 'sanitize_timeout' ),
+			)
+		);
+
+		register_setting(
+			self::SETTINGS_GROUP,
+			'dragonwebhookmanager_delete_data_on_uninstall',
+			array(
+				'type'              => 'boolean',
+				'default'           => false,
+				'sanitize_callback' => static function ( $value ): int {
+					return empty( $value ) ? 0 : 1;
+				},
+			)
 		);
 	}
 
@@ -106,7 +117,6 @@ class Admin {
 					'testSent'         => __( 'Test webhook sent.', 'dragon-webhook-manager' ),
 					'logsCleared'      => __( 'Logs cleared.', 'dragon-webhook-manager' ),
 					'error'            => __( 'An error occurred.', 'dragon-webhook-manager' ),
-					'limitReached'     => __( 'Webhook limit reached. Upgrade to Pro for unlimited webhooks.', 'dragon-webhook-manager' ),
 				),
 			)
 		);
@@ -117,7 +127,7 @@ class Admin {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'dragon-webhook-manager' ) );
 		}
 
-		// Check for tab parameter (for Pro license tab).
+		// Tabs are registered by other plugins through `dragonwebhookmanager_admin_tabs`.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view routing; no state change.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : '';
 		if ( $tab && has_action( 'dragonwebhookmanager_admin_tab_' . $tab ) ) {
@@ -137,6 +147,9 @@ class Admin {
 				break;
 			case 'logs':
 				$this->render_logs_page();
+				break;
+			case 'settings':
+				$this->render_settings_page();
 				break;
 			default:
 				$this->render_list_page();
@@ -171,9 +184,8 @@ class Admin {
 	private function render_list_page(): void {
 		$dragonwebhookmanager_webhooks      = $this->webhook->get_all();
 		$dragonwebhookmanager_webhook_count = $this->webhook->count();
-
-		$dragonwebhookmanager_max_webhooks = apply_filters( 'dragonwebhookmanager_max_webhooks', DRAGONWEBHOOKMANAGER_MAX_WEBHOOKS_FREE );
-		$dragonwebhookmanager_stats        = $this->logger->get_stats();
+		$dragonwebhookmanager_triggers      = Triggers::get_triggers();
+		$dragonwebhookmanager_stats         = $this->logger->get_stats();
 
 		include DRAGONWEBHOOKMANAGER_PLUGIN_DIR . 'admin/views/dashboard.php';
 	}
@@ -182,13 +194,6 @@ class Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view routing; no state change.
 		$dragonwebhookmanager_id      = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
 		$dragonwebhookmanager_webhook = $dragonwebhookmanager_id ? $this->webhook->get( $dragonwebhookmanager_id ) : null;
-
-		// Check limit for new webhooks (Pro can override via filter).
-
-		$dragonwebhookmanager_max_webhooks = apply_filters( 'dragonwebhookmanager_max_webhooks', DRAGONWEBHOOKMANAGER_MAX_WEBHOOKS_FREE );
-		if ( ! $dragonwebhookmanager_id && $this->webhook->count() >= $dragonwebhookmanager_max_webhooks ) {
-			wp_die( esc_html__( 'Webhook limit reached. Upgrade to Pro for unlimited webhooks.', 'dragon-webhook-manager' ) );
-		}
 
 		$dragonwebhookmanager_triggers           = Triggers::get_triggers_grouped();
 		$dragonwebhookmanager_variable_reference = Payload::get_variable_reference();
@@ -202,7 +207,17 @@ class Admin {
 		$dragonwebhookmanager_logs       = $this->logger->get_logs( 100, 0, $dragonwebhookmanager_webhook_id );
 		$dragonwebhookmanager_stats      = $this->logger->get_stats();
 		$dragonwebhookmanager_webhooks   = $this->webhook->get_all();
+		$dragonwebhookmanager_triggers   = Triggers::get_triggers();
 
 		include DRAGONWEBHOOKMANAGER_PLUGIN_DIR . 'admin/views/logs.php';
+	}
+
+	private function render_settings_page(): void {
+		$dragonwebhookmanager_settings_group  = self::SETTINGS_GROUP;
+		$dragonwebhookmanager_retention_days  = Plugin::sanitize_retention_days( get_option( 'dragonwebhookmanager_log_retention_days', 7 ) );
+		$dragonwebhookmanager_timeout         = Plugin::sanitize_timeout( get_option( 'dragonwebhookmanager_default_timeout', 30 ) );
+		$dragonwebhookmanager_delete_on_unins = (bool) get_option( 'dragonwebhookmanager_delete_data_on_uninstall', false );
+
+		include DRAGONWEBHOOKMANAGER_PLUGIN_DIR . 'admin/views/settings.php';
 	}
 }

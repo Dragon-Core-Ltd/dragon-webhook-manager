@@ -49,7 +49,7 @@ class Logger {
 	 *
 	 * Admin-configured Authorization / API-key headers would otherwise sit in
 	 * the log table (and the logs-table DOM) in cleartext for every delivery.
-	 * The HMAC signature header is left intact — it is not a secret.
+	 * Signature headers are left intact - they are not secrets.
 	 *
 	 * @param string|array $headers Header map or its JSON encoding.
 	 * @return string JSON-encoded headers with secrets masked.
@@ -210,7 +210,7 @@ class Logger {
 	public function cleanup_old_logs(): void {
 		global $wpdb;
 
-		$retention_days = (int) get_option( 'dragonwebhookmanager_log_retention_days', 7 );
+		$retention_days = Plugin::sanitize_retention_days( get_option( 'dragonwebhookmanager_log_retention_days', 7 ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Scheduled cleanup of plugin's custom table.
 		$wpdb->query(
@@ -235,9 +235,10 @@ class Logger {
 	/**
 	 * Create a minimal log entry and return its ID.
 	 *
-	 * Used by the Pro integration (retry) to open a log row that a later
-	 * update fills in with the delivery outcome. Only core columns are set;
-	 * Pro-specific fields (retry linkage) are stored separately by Pro.
+	 * Used by the integration API (`dragonwebhookmanager_create_log`) to open
+	 * a log row that a later update fills in with the delivery outcome. Only
+	 * core columns are set; callers keep any extra bookkeeping in their own
+	 * storage.
 	 *
 	 * @param array $data Log data: webhook_id, trigger_event, status.
 	 * @return int New log ID (0 on failure).

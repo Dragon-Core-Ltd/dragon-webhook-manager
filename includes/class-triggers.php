@@ -16,95 +16,47 @@ class Triggers {
 	private Logger $logger;
 
 	/**
-	 * Available triggers with their WordPress hooks
+	 * Built-in triggers with their WordPress hooks.
+	 *
+	 * Additional triggers can be registered through the
+	 * `dragonwebhookmanager_triggers` filter; read the full list with
+	 * get_triggers() rather than this constant.
 	 */
 	public const TRIGGERS = array(
-		// Free triggers - WordPress Core
-		'post_published'          => array(
+		'post_published'    => array(
 			'label'    => 'Post Published',
 			'category' => 'Content',
 			'hook'     => 'transition_post_status',
 		),
-		'post_updated'            => array(
+		'post_updated'      => array(
 			'label'    => 'Post Updated',
 			'category' => 'Content',
 			'hook'     => 'post_updated',
 		),
-		'post_trashed'            => array(
+		'post_trashed'      => array(
 			'label'    => 'Post Trashed',
 			'category' => 'Content',
 			'hook'     => 'wp_trash_post',
 		),
-		'user_registered'         => array(
+		'user_registered'   => array(
 			'label'    => 'User Registered',
 			'category' => 'User',
 			'hook'     => 'user_register',
 		),
-		'user_login'              => array(
+		'user_login'        => array(
 			'label'    => 'User Login',
 			'category' => 'User',
 			'hook'     => 'wp_login',
 		),
-		'comment_submitted'       => array(
+		'comment_submitted' => array(
 			'label'    => 'Comment Submitted',
 			'category' => 'Comment',
 			'hook'     => 'wp_insert_comment',
 		),
-		'comment_approved'        => array(
+		'comment_approved'  => array(
 			'label'    => 'Comment Approved',
 			'category' => 'Comment',
 			'hook'     => 'transition_comment_status',
-		),
-		// Pro triggers - WooCommerce Orders
-		'wc_order_created'        => array(
-			'label'    => 'Order Created',
-			'category' => 'WooCommerce Orders',
-			'hook'     => 'woocommerce_new_order',
-			'pro'      => true,
-		),
-		'wc_order_paid'           => array(
-			'label'    => 'Order Paid',
-			'category' => 'WooCommerce Orders',
-			'hook'     => 'woocommerce_payment_complete',
-			'pro'      => true,
-		),
-		'wc_order_completed'      => array(
-			'label'    => 'Order Completed',
-			'category' => 'WooCommerce Orders',
-			'hook'     => 'woocommerce_order_status_completed',
-			'pro'      => true,
-		),
-		'wc_order_cancelled'      => array(
-			'label'    => 'Order Cancelled',
-			'category' => 'WooCommerce Orders',
-			'hook'     => 'woocommerce_order_status_cancelled',
-			'pro'      => true,
-		),
-		'wc_order_refunded'       => array(
-			'label'    => 'Order Refunded',
-			'category' => 'WooCommerce Orders',
-			'hook'     => 'woocommerce_order_refunded',
-			'pro'      => true,
-		),
-		// Pro triggers - WooCommerce Customers
-		'wc_customer_created'     => array(
-			'label'    => 'Customer Created',
-			'category' => 'WooCommerce Customers',
-			'hook'     => 'woocommerce_created_customer',
-			'pro'      => true,
-		),
-		// Pro triggers - WooCommerce Products
-		'wc_product_low_stock'    => array(
-			'label'    => 'Product Low Stock',
-			'category' => 'WooCommerce Products',
-			'hook'     => 'woocommerce_low_stock',
-			'pro'      => true,
-		),
-		'wc_product_out_of_stock' => array(
-			'label'    => 'Product Out of Stock',
-			'category' => 'WooCommerce Products',
-			'hook'     => 'woocommerce_no_stock',
-			'pro'      => true,
 		),
 	);
 
@@ -115,7 +67,7 @@ class Triggers {
 
 		$this->register_hooks();
 
-		// Allow Pro to dispatch triggers.
+		// Triggers registered by other plugins dispatch through this action.
 		add_action( 'dragonwebhookmanager_trigger_fired', array( $this, 'dispatch' ), 10, 2 );
 	}
 
@@ -253,8 +205,7 @@ class Triggers {
 	 * Execute a single webhook
 	 */
 	private function execute_webhook( array $webhook, array $context ): void {
-		// Allow Pro to check conditions.
-
+		// Filterable: return false to skip this delivery.
 		$should_deliver = apply_filters( 'dragonwebhookmanager_should_deliver', true, $webhook, $context );
 		if ( ! $should_deliver ) {
 			return;
@@ -263,7 +214,7 @@ class Triggers {
 		// Parse payload template
 		$payload = $this->payload->parse( $webhook['payload_template'] ?? '{}', $context );
 
-		// Allow Pro to add signature headers.
+		// Filterable request headers (for example to add a signature).
 		$webhook_headers = json_decode( $webhook['headers'] ?? '{}', true );
 		if ( ! is_array( $webhook_headers ) ) {
 			$webhook_headers = array();
@@ -288,19 +239,53 @@ class Triggers {
 			$result['error_message']
 		);
 
-		// Allow Pro to handle retries on failure.
+		// Fires on a failed delivery so listeners can schedule a re-delivery.
 		if ( ! $result['success'] ) {
-
 			do_action( 'dragonwebhookmanager_delivery_failed', $log_id, $webhook, $context );
 		}
 	}
 
 	/**
-	 * Get all available triggers
+	 * Get all available triggers, including any registered by other plugins.
+	 *
+	 * @return array<string, array{label: string, category: string, hook?: string}>
 	 */
 	public static function get_triggers(): array {
+		/**
+		 * Filters the trigger definitions.
+		 *
+		 * @param array $triggers Trigger definitions keyed by trigger event.
+		 */
+		$triggers = apply_filters( 'dragonwebhookmanager_triggers', self::TRIGGERS );
+		if ( ! is_array( $triggers ) ) {
+			return self::TRIGGERS;
+		}
 
-		return apply_filters( 'dragonwebhookmanager_triggers', self::TRIGGERS );
+		$clean = array();
+		foreach ( $triggers as $key => $trigger ) {
+			if ( ! is_string( $key ) || '' === $key || ! is_array( $trigger ) ) {
+				continue;
+			}
+			$trigger['label']    = isset( $trigger['label'] ) && is_scalar( $trigger['label'] ) ? (string) $trigger['label'] : $key;
+			$trigger['category'] = isset( $trigger['category'] ) && is_scalar( $trigger['category'] ) ? (string) $trigger['category'] : 'Other';
+			$clean[ $key ]       = $trigger;
+		}
+
+		return empty( $clean ) ? self::TRIGGERS : $clean;
+	}
+
+	/**
+	 * Get the display label for a trigger event.
+	 *
+	 * Falls back to the raw event key when the trigger is not registered.
+	 *
+	 * @param string $trigger_event Trigger event key.
+	 * @return string
+	 */
+	public static function get_label( string $trigger_event ): string {
+		$triggers = self::get_triggers();
+
+		return (string) ( $triggers[ $trigger_event ]['label'] ?? $trigger_event );
 	}
 
 	/**
@@ -309,14 +294,13 @@ class Triggers {
 	public static function get_triggers_grouped(): array {
 		$grouped = array();
 
-		foreach ( self::TRIGGERS as $key => $trigger ) {
-			$category = $trigger['category'];
+		foreach ( self::get_triggers() as $key => $trigger ) {
+			$category = (string) ( $trigger['category'] ?? 'Other' );
 			if ( ! isset( $grouped[ $category ] ) ) {
 				$grouped[ $category ] = array();
 			}
 			$grouped[ $category ][ $key ] = array(
-				'label' => $trigger['label'],
-				'pro'   => ! empty( $trigger['pro'] ),
+				'label' => (string) ( $trigger['label'] ?? $key ),
 			);
 		}
 

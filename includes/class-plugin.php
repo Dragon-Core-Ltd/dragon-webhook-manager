@@ -78,7 +78,7 @@ class Plugin {
 		$this->admin    = new Admin( $this->webhook, $this->logger );
 		$this->ajax     = new Ajax( $this->webhook, $this->logger, $this->payload );
 
-		// Pro integration hook API (used by Dragon Webhook Manager Pro).
+		// Integration hook API for add-ons (re-delivery and logging).
 		$this->integration = new Integration( $this->webhook, $this->payload, $this->logger );
 	}
 
@@ -174,6 +174,34 @@ class Plugin {
 		if ( false === get_option( 'dragonwebhookmanager_default_timeout' ) ) {
 			update_option( 'dragonwebhookmanager_default_timeout', 30 );
 		}
+	}
+
+	/**
+	 * Clamp the log retention setting to 1-365 days.
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return int
+	 */
+	public static function sanitize_retention_days( $value ): int {
+		$days = absint( $value );
+		if ( $days < 1 ) {
+			return 7;
+		}
+		return min( $days, 365 );
+	}
+
+	/**
+	 * Clamp the delivery timeout setting to 5-120 seconds.
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return int
+	 */
+	public static function sanitize_timeout( $value ): int {
+		$seconds = absint( $value );
+		if ( $seconds < 1 ) {
+			return 30;
+		}
+		return max( 5, min( $seconds, 120 ) );
 	}
 
 	// Component getters

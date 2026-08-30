@@ -70,7 +70,7 @@ class Ajax {
 		if ( false === $result ) {
 			$message = $id
 				? __( 'Failed to update webhook.', 'dragon-webhook-manager' )
-				: __( 'Failed to create webhook. Limit may be reached.', 'dragon-webhook-manager' );
+				: __( 'Failed to create webhook.', 'dragon-webhook-manager' );
 			wp_send_json_error( array( 'message' => $message ) );
 		}
 
@@ -79,11 +79,10 @@ class Ajax {
 		/**
 		 * Fires after a webhook is created or updated.
 		 *
-		 * Add-ons (Dragon Webhook Manager Pro) persist their own per-webhook
-		 * settings — HMAC signing secret, auto-retry, delivery conditions —
-		 * on this action, keyed by webhook ID in their own metadata store.
-		 * They read the raw request fields they own from $_POST directly; the
-		 * nonce and capability were already verified above.
+		 * Add-ons persist their own per-webhook settings on this action,
+		 * keyed by webhook ID in their own metadata store. They read the raw
+		 * request fields they own from $_POST directly; the nonce and
+		 * capability were already verified above.
 		 *
 		 * @param int   $webhook_id Saved webhook ID.
 		 * @param array $data       Sanitized core webhook data that was stored.

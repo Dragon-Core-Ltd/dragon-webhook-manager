@@ -24,8 +24,7 @@ class Webhook {
 	public function get_all( bool $active_only = false, int $limit = 500 ): array {
 		global $wpdb;
 
-		// The free tier caps webhook count, but Pro is unlimited — a hard LIMIT
-		// keeps the dashboard render bounded on any install.
+		// A hard LIMIT keeps the dashboard render bounded on any install.
 		$limit = max( 1, $limit );
 
 		if ( $active_only ) {
@@ -84,13 +83,6 @@ class Webhook {
 	 */
 	public function create( array $data ): int|false {
 		global $wpdb;
-
-		// Check free limit (Pro can override via filter).
-
-		$max_webhooks = apply_filters( 'dragonwebhookmanager_max_webhooks', DRAGONWEBHOOKMANAGER_MAX_WEBHOOKS_FREE );
-		if ( $this->count() >= $max_webhooks ) {
-			return false;
-		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Write to plugin's custom table.
 		$result = $wpdb->insert(
@@ -238,7 +230,7 @@ class Webhook {
 			$headers['Content-Type'] = 'application/json';
 		}
 
-		$timeout = (int) get_option( 'dragonwebhookmanager_default_timeout', 30 );
+		$timeout = Plugin::sanitize_timeout( get_option( 'dragonwebhookmanager_default_timeout', 30 ) );
 
 		$start_time = microtime( true );
 

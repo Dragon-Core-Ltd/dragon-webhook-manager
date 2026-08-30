@@ -1,11 +1,11 @@
 <?php
 /**
- * Pro integration API.
+ * Integration API for add-ons: re-delivery and logging hooks.
  *
- * Dragon Webhook Manager Pro re-delivers and logs through a set of `dragonwebhookmanager_*`
- * hooks rather than reaching into the free plugin's classes directly. This
- * class implements those hooks against the custom-table storage, so Pro
- * features (auto-retry) work without assuming webhooks/logs are posts.
+ * Other plugins re-deliver and log through a set of `dragonwebhookmanager_*`
+ * hooks rather than reaching into this plugin's classes directly. This class
+ * implements those hooks against the custom-table storage, so callers never
+ * need to assume webhooks/logs are posts.
  *
  * @package DragonWebhookManager
  */
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers the Pro-facing hook API.
+ * Registers the add-on hook API.
  */
 class Integration {
 
@@ -78,8 +78,9 @@ class Integration {
 	/**
 	 * Render the payload and deliver a webhook through the safe delivery path.
 	 *
-	 * Re-applies `dragonwebhookmanager_webhook_headers` so Pro's HMAC signature is added to the
-	 * retried request, exactly as on the original delivery.
+	 * Re-applies `dragonwebhookmanager_webhook_headers` so filtered headers
+	 * (for example a request signature) are added to the retried request,
+	 * exactly as on the original delivery.
 	 *
 	 * @param mixed $result  Short-circuit value.
 	 * @param array $webhook Webhook data.

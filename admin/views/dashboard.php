@@ -7,15 +7,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix and its hooks are consumed by the Pro add-on.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template variables are scoped to the including method, not global; dragonwebhookmanager_ is this plugin's established prefix.
 ?>
 <div class="wrap dragon-ui dwm-wrap">
 	<h1 class="dragon-title wp-heading-inline"><span class="dragon-mark" aria-hidden="true"></span><?php esc_html_e( 'Dragon Webhook Manager', 'dragon-webhook-manager' ); ?></h1>
-	<?php if ( $dragonwebhookmanager_webhook_count < $dragonwebhookmanager_max_webhooks ) : ?>
-		<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit' ) ); ?>" class="page-title-action">
-			<?php esc_html_e( 'Add Webhook', 'dragon-webhook-manager' ); ?>
-		</a>
-	<?php endif; ?>
+	<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=edit' ) ); ?>" class="page-title-action">
+		<?php esc_html_e( 'Add Webhook', 'dragon-webhook-manager' ); ?>
+	</a>
 	<hr class="wp-header-end">
 
 	<?php
@@ -40,18 +38,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="dwm-stat-card">
 			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_webhook_count ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Webhooks', 'dragon-webhook-manager' ); ?></span>
-			<span class="dwm-stat-limit">
-				<?php
-				echo esc_html(
-					sprintf(
-						/* translators: 1: Current number of webhooks, 2: Maximum number of webhooks allowed. */
-						__( '%1$d of %2$d', 'dragon-webhook-manager' ),
-						$dragonwebhookmanager_webhook_count,
-						$dragonwebhookmanager_max_webhooks
-					)
-				);
-				?>
-			</span>
 		</div>
 		<div class="dwm-stat-card">
 			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['today'] ); ?></span>
@@ -67,19 +53,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</div>
 
-	<?php
-	// Only show Pro upsell if Pro is not active and licensed.
-	$dragonwebhookmanager_pro_enabled = apply_filters( 'dragonwebhookmanager_pro_triggers_enabled', false );
-	if ( ! $dragonwebhookmanager_pro_enabled ) :
-		?>
-	<!-- Pro Upsell Notice -->
-	<div class="dwm-pro-notice">
-		<div class="dwm-pro-notice-content">
-			<strong><?php esc_html_e( 'Need WooCommerce webhooks?', 'dragon-webhook-manager' ); ?></strong>
-			<span><?php esc_html_e( 'Upgrade to Pro for 20+ WooCommerce triggers: orders, customers, products, inventory alerts & more.', 'dragon-webhook-manager' ); ?></span>
+	<?php if ( ! defined( 'DWMP_VERSION' ) ) : ?>
+	<div class="dwm-addon-card">
+		<div class="dwm-addon-card-content">
+			<strong><?php esc_html_e( 'Dragon Webhook Manager Pro', 'dragon-webhook-manager' ); ?></strong>
+			<span><?php esc_html_e( 'Adds WooCommerce triggers, HMAC request signing, automatic retry with backoff, and conditional delivery rules.', 'dragon-webhook-manager' ); ?></span>
 		</div>
-		<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro" target="_blank" class="button button-primary">
-			<?php esc_html_e( 'Get Pro', 'dragon-webhook-manager' ); ?>
+		<a href="https://dragoncore.ltd/plugins/dragon-webhook-manager-pro" target="_blank" rel="noopener" class="button">
+			<?php esc_html_e( 'Learn more', 'dragon-webhook-manager' ); ?>
 		</a>
 	</div>
 	<?php endif; ?>
@@ -130,10 +111,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</td>
 						<td class="column-trigger">
 							<span class="dwm-trigger-badge">
-								<?php
-								$dragonwebhookmanager_triggers = \DragonWebhookManager\Triggers::TRIGGERS;
-								echo esc_html( $dragonwebhookmanager_triggers[ $dragonwebhookmanager_webhook['trigger_event'] ]['label'] ?? $dragonwebhookmanager_webhook['trigger_event'] );
-								?>
+								<?php echo esc_html( $dragonwebhookmanager_triggers[ $dragonwebhookmanager_webhook['trigger_event'] ]['label'] ?? $dragonwebhookmanager_webhook['trigger_event'] ); ?>
 							</span>
 						</td>
 						<td class="column-url">
@@ -168,6 +146,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<p class="dwm-footer-links">
 		<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=logs' ) ); ?>">
 			<?php esc_html_e( 'View Delivery Logs', 'dragon-webhook-manager' ); ?> &rarr;
+		</a>
+		&nbsp;|&nbsp;
+		<a href="<?php echo esc_url( admin_url( 'tools.php?page=dragon-webhook-manager&view=settings' ) ); ?>">
+			<?php esc_html_e( 'Settings', 'dragon-webhook-manager' ); ?> &rarr;
 		</a>
 	</p>
 </div>
