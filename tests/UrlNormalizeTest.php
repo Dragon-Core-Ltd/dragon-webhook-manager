@@ -31,6 +31,12 @@ final class UrlNormalizeTest extends TestCase {
 	}
 
 	public function test_unicode_host_is_converted_to_punycode(): void {
+		if ( ! function_exists( 'idn_to_ascii' ) ) {
+			// normalize_url() deliberately refuses a non-ASCII host without intl,
+			// so this case cannot be asserted on a box that lacks the extension.
+			$this->markTestSkipped( 'The intl extension is not loaded.' );
+		}
+
 		$this->assertSame( 'https://xn--bcher-kva.example/hook', Webhook::normalize_url( 'https://bücher.example/hook' ) );
 		$this->assertSame(
 			'https://user:pw@xn--mnchen-3ya.example.com:8443/p/a?x=1#f',

@@ -174,12 +174,24 @@ class Ajax {
 		$webhook = $id ? $this->webhook->get( $id ) : null;
 
 		if ( ! $webhook ) {
+			// normalize_url() returns null for a URL it refuses. Keep the raw input
+			// so a refused URL is reported as invalid rather than as missing: the
+			// user did supply one.
+			$raw_url        = trim( (string) wp_unslash( $_POST['url'] ?? '' ) );
+			$normalized_url = Webhook::normalize_url( esc_url_raw( $raw_url ) );
+
+			if ( '' !== $raw_url && null === $normalized_url ) {
+				wp_send_json_error( array( 'message' => __( 'That URL could not be used. Enter a full https:// address.', 'dragon-webhook-manager' ) ) );
+			}
+
+			$normalized_url = (string) $normalized_url;
+
 			// Test with form data
 			$webhook = array(
 				'id'               => 0,
 				'name'             => 'Test',
 				'trigger_event'    => sanitize_key( $_POST['trigger_event'] ?? 'post_published' ),
-				'url'              => Webhook::normalize_url( esc_url_raw( wp_unslash( $_POST['url'] ?? '' ) ) ) ?? '',
+				'url'              => $normalized_url,
 				'method'           => sanitize_key( $_POST['method'] ?? 'POST' ),
 				'headers'          => wp_json_encode( $this->parse_headers( sanitize_textarea_field( wp_unslash( $_POST['headers'] ?? '' ) ) ) ),
 				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw JSON template; stored for machine use and escaped on output.
