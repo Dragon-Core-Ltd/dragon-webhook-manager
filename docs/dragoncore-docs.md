@@ -3,10 +3,10 @@
 Outgoing webhooks for developers: POST to any URL when things happen in WordPress.
 
 ## Getting started
-**Tools → Webhook Manager → Add New**: pick a trigger (post published, user registered, comment posted…), enter the destination HTTPS URL, save. The **Logs** tab shows every delivery with status codes.
+**Tools → Webhook Manager → Add New**: pick a trigger (post published, user registered, comment posted…), enter the destination HTTPS URL, save. An internationalised host name (for example `https://bücher.example/hook`) is accepted and stored in its ASCII (punycode) form, which is what the Logs tab shows. The **Logs** tab shows every delivery with status codes. Add-ons can append label/value pairs to a delivery's details modal through the `dragonwebhookmanager_log_details` filter (Webhook Manager Pro shows retry status there).
 
 ## Payloads
-JSON bodies with the event's relevant object (post, user, comment) — field reference per trigger on the edit screen.
+JSON bodies with the event's relevant object (post, user, comment) - field reference per trigger on the edit screen.
 
 ## Settings
 **Tools → Webhook Manager → Settings**:

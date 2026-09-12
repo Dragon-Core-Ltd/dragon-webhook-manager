@@ -282,6 +282,17 @@
 
 			$('#dwm-log-res-body').text(DWM.formatJson(log.response_body) || '-');
 
+			// Add-on supplied label/value pairs (dragonwebhookmanager_log_details).
+			var $extra = $('#dwm-log-extra').empty();
+			var details = Array.isArray(log.details) ? log.details : [];
+			$.each(details, function(_, pair) {
+				var $row = $('<p></p>');
+				$row.append($('<strong></strong>').text(pair.label + ': '));
+				$row.append($('<span></span>').text(pair.value));
+				$extra.append($row);
+			});
+			$('#dwm-log-extra-section').toggle(details.length > 0);
+
 			$('#dwm-log-details-modal').show();
 		},
 

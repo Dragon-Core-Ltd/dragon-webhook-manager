@@ -4,7 +4,7 @@ Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.11
+Stable tag: 1.0.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,13 @@ The plugin works alongside WooCommerce but ships no WooCommerce-specific trigger
 
 == Changelog ==
 
+= 1.0.12 =
+* Fixed: webhook URLs with an internationalised (non-ASCII) host name, such as https://bücher.example/hook, can now be saved and tested. The host is stored in its ASCII (punycode) form; the delivery safety checks run on that form as before. Plain ASCII URLs are stored exactly as entered.
+* Fixed: the webhooks and logs tables are only marked as installed once they really exist, so a failed table creation is retried instead of being skipped.
+* Fixed: the one-time move of settings off the old option names only removes the old copy once the new one has been confirmed.
+* Fixed: if the tables still cannot be created, the plugin now waits 10 minutes between attempts instead of retrying on every admin page load, and shows administrators a notice naming the missing table(s).
+* Delivery log details can be extended by add-ons: the `dragonwebhookmanager_log_details` filter now feeds an "Additional Details" section in the delivery-details modal (Webhook Manager Pro uses it for retry status).
+
 = 1.0.11 =
 * Removed the cap on the number of webhooks - create as many as you need.
 * The trigger dropdown now lists only triggers that can actually fire on your site; other plugins can register more through the `dragonwebhookmanager_triggers` filter.
@@ -178,6 +185,9 @@ Dragon Webhook Manager sends data from your WordPress site to external URLs that
 For more information, visit [Dragon Core](https://dragoncore.ltd/).
 
 == Upgrade Notice ==
+
+= 1.0.12 =
+Internationalised webhook URLs can now be saved; table-setup reliability fixes. Existing webhooks and logs are unaffected.
 
 = 1.0.11 =
 Removes the webhook cap and adds a Settings screen for log retention and delivery timeout. Existing webhooks and logs are unaffected.

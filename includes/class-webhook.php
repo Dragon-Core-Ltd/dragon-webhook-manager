@@ -317,6 +317,44 @@ class Webhook {
 	}
 
 	/**
+	 * Validate a webhook URL, converting an internationalised host to its
+	 * ASCII (punycode) form so it can be stored, resolved and pinned.
+	 *
+	 * A URL that already validates as ASCII is returned unchanged. Without the
+	 * intl extension a non-ASCII host is rejected, as before.
+	 *
+	 * @param string $url URL as entered.
+	 * @return string|null Storable URL, or null when invalid.
+	 */
+	public static function normalize_url( string $url ): ?string {
+		$url = trim( $url );
+		if ( '' === $url ) {
+			return null;
+		}
+		if ( filter_var( $url, FILTER_VALIDATE_URL ) ) {
+			return $url;
+		}
+		if ( ! function_exists( 'idn_to_ascii' ) ) {
+			return null;
+		}
+
+		// parse_url() corrupts multibyte host bytes, so the URL is split here.
+		if ( ! preg_match( '#^([a-z][a-z0-9+.-]*)://([^/?\#@]*@)?([^/?\#:]+)(:[0-9]+)?([^?\#]*)(\?[^\#]*)?(\#.*)?$#i', $url, $m ) ) {
+			return null;
+		}
+
+		$ascii_host = idn_to_ascii( $m[3], IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46 );
+		if ( false === $ascii_host || '' === $ascii_host ) {
+			return null;
+		}
+
+		$rebuilt = $m[1] . '://' . ( $m[2] ?? '' ) . $ascii_host . ( $m[4] ?? '' ) . ( $m[5] ?? '' ) . ( $m[6] ?? '' ) . ( $m[7] ?? '' );
+
+		// Only the host was converted; anything else non-ASCII still fails here.
+		return filter_var( $rebuilt, FILTER_VALIDATE_URL ) ? $rebuilt : null;
+	}
+
+	/**
 	 * Resolve a webhook URL and decide whether it may be delivered.
 	 *
 	 * Resolves the host to every IPv4 and IPv6 address and blocks the request

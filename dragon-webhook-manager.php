@@ -3,7 +3,7 @@
  * Plugin Name: Dragon Webhook Manager
  * Plugin URI: https://dragoncore.ltd/plugins/dragon-webhook-manager
  * Description: Visual interface for creating outgoing webhooks on any WordPress event. Build automations without code.
- * Version: 1.0.11
+ * Version: 1.0.12
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Dragon Core
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'DRAGONWEBHOOKMANAGER_VERSION', '1.0.11' );
+define( 'DRAGONWEBHOOKMANAGER_VERSION', '1.0.12' );
 define( 'DRAGONWEBHOOKMANAGER_PLUGIN_FILE', __FILE__ );
 define( 'DRAGONWEBHOOKMANAGER_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DRAGONWEBHOOKMANAGER_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -61,6 +61,7 @@ function dragonwebhookmanager_init(): void {
 
 	if ( is_admin() ) {
 		add_action( 'admin_init', array( $dragonwebhookmanager_plugin, 'maybe_upgrade' ) );
+		add_action( 'admin_notices', array( $dragonwebhookmanager_plugin, 'schema_failure_notice' ) );
 	}
 }
 add_action( 'plugins_loaded', __NAMESPACE__ . '\dragonwebhookmanager_init' );

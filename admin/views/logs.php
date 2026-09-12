@@ -165,6 +165,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<p><strong><?php esc_html_e( 'Body:', 'dragon-webhook-manager' ); ?></strong></p>
 				<pre id="dwm-log-res-body"></pre>
 			</div>
+			<div class="dwm-log-section" id="dwm-log-extra-section" style="display: none;">
+				<h4><?php esc_html_e( 'Additional Details', 'dragon-webhook-manager' ); ?></h4>
+				<div id="dwm-log-extra"></div>
+			</div>
 		</div>
 		<button type="button" class="button dwm-modal-close"><?php esc_html_e( 'Close', 'dragon-webhook-manager' ); ?></button>
 	</div>

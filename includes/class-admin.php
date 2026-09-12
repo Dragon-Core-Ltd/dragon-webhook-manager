@@ -204,12 +204,65 @@ class Admin {
 	private function render_logs_page(): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter parameter; no state change.
 		$dragonwebhookmanager_webhook_id = isset( $_GET['webhook_id'] ) ? absint( $_GET['webhook_id'] ) : null;
-		$dragonwebhookmanager_logs       = $this->logger->get_logs( 100, 0, $dragonwebhookmanager_webhook_id );
+		$dragonwebhookmanager_logs       = self::with_details( $this->logger->get_logs( 100, 0, $dragonwebhookmanager_webhook_id ) );
 		$dragonwebhookmanager_stats      = $this->logger->get_stats();
 		$dragonwebhookmanager_webhooks   = $this->webhook->get_all();
 		$dragonwebhookmanager_triggers   = Triggers::get_triggers();
 
 		include DRAGONWEBHOOKMANAGER_PLUGIN_DIR . 'admin/views/logs.php';
+	}
+
+	/**
+	 * Attach add-on supplied details to each delivery log row for the modal.
+	 *
+	 * @param array $logs Log rows.
+	 * @return array Rows with a 'details' list of label/value pairs.
+	 */
+	public static function with_details( array $logs ): array {
+		foreach ( $logs as $i => $log ) {
+			$logs[ $i ]['details'] = self::log_details( $log );
+		}
+		return $logs;
+	}
+
+	/**
+	 * Collect extra details for one delivery log row from add-ons.
+	 *
+	 * @param array $log Log row.
+	 * @return array List of ['label' => string, 'value' => string].
+	 */
+	public static function log_details( array $log ): array {
+		/**
+		 * Filters the extra details shown in the delivery-details modal.
+		 *
+		 * Add-ons return key => value pairs; the key is turned into a label
+		 * ("retry_status" becomes "Retry status") and the value is displayed
+		 * as text. Non-scalar values are JSON-encoded.
+		 *
+		 * @param array $details Details so far (empty by default).
+		 * @param array $log     Log row.
+		 */
+		$details = apply_filters( 'dragonwebhookmanager_log_details', array(), $log );
+		$details = is_array( $details ) ? $details : array();
+
+		$pairs = array();
+		if ( ! is_array( $details ) ) {
+			return $pairs;
+		}
+		foreach ( $details as $key => $value ) {
+			if ( ! is_string( $key ) || '' === $key ) {
+				continue;
+			}
+			$text = is_scalar( $value ) ? (string) $value : (string) wp_json_encode( $value );
+			if ( '' === $text ) {
+				continue;
+			}
+			$pairs[] = array(
+				'label' => ucfirst( str_replace( '_', ' ', $key ) ),
+				'value' => $text,
+			);
+		}
+		return $pairs;
 	}
 
 	private function render_settings_page(): void {

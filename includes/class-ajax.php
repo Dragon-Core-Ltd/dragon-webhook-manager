@@ -56,10 +56,12 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'Name, trigger, and URL are required.', 'dragon-webhook-manager' ) ) );
 		}
 
-		// Validate URL
-		if ( ! filter_var( $data['url'], FILTER_VALIDATE_URL ) ) {
+		// Validate URL; an internationalised host is stored in its ASCII form.
+		$normalized_url = Webhook::normalize_url( $data['url'] );
+		if ( null === $normalized_url ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid URL format.', 'dragon-webhook-manager' ) ) );
 		}
+		$data['url'] = $normalized_url;
 
 		if ( $id ) {
 			$result = $this->webhook->update( $id, $data );
@@ -177,7 +179,7 @@ class Ajax {
 				'id'               => 0,
 				'name'             => 'Test',
 				'trigger_event'    => sanitize_key( $_POST['trigger_event'] ?? 'post_published' ),
-				'url'              => esc_url_raw( wp_unslash( $_POST['url'] ?? '' ) ),
+				'url'              => Webhook::normalize_url( esc_url_raw( wp_unslash( $_POST['url'] ?? '' ) ) ) ?? '',
 				'method'           => sanitize_key( $_POST['method'] ?? 'POST' ),
 				'headers'          => wp_json_encode( $this->parse_headers( sanitize_textarea_field( wp_unslash( $_POST['headers'] ?? '' ) ) ) ),
 				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw JSON template; stored for machine use and escaped on output.

@@ -11,6 +11,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Plugin {
 
+	/**
+	 * Transient that suppresses further table-creation attempts while it exists.
+	 */
+	private const SCHEMA_RETRY_TRANSIENT = 'dragonwebhookmanager_schema_retry';
+
+	/**
+	 * Option holding the missing table names and the time of the last attempt.
+	 */
+	private const SCHEMA_FAILURE_OPTION = 'dragonwebhookmanager_schema_failure';
+
+	/**
+	 * Seconds between table-creation attempts after a failure.
+	 */
+	private const SCHEMA_RETRY_DELAY = 10 * MINUTE_IN_SECONDS;
+
 	private static ?Plugin $instance = null;
 
 	private Webhook $webhook;
@@ -57,7 +72,11 @@ class Plugin {
 			$legacy = get_option( 'dwm_' . $name, null );
 			if ( null !== $legacy ) {
 				update_option( 'dragonwebhookmanager_' . $name, $legacy );
-				delete_option( 'dwm_' . $name );
+				// update_option() returns false for an unchanged value as well as
+				// a failed write, so the copy is confirmed by reading it back.
+				if ( get_option( 'dragonwebhookmanager_' . $name, null ) === $legacy ) {
+					delete_option( 'dwm_' . $name );
+				}
 			}
 		}
 
@@ -88,9 +107,37 @@ class Plugin {
 	 * The option is autoloaded, so the check costs nothing per request.
 	 */
 	public function maybe_upgrade(): void {
-		if ( get_option( 'dragonwebhookmanager_db_version' ) !== DRAGONWEBHOOKMANAGER_VERSION ) {
-			$this->create_tables();
+		if ( get_option( 'dragonwebhookmanager_db_version' ) === DRAGONWEBHOOKMANAGER_VERSION ) {
+			return;
 		}
+		// After a failed creation, wait out the retry window instead of running
+		// dbDelta on every admin request. Activation is not throttled.
+		if ( false !== get_transient( self::SCHEMA_RETRY_TRANSIENT ) ) {
+			return;
+		}
+		$this->create_tables();
+	}
+
+	/**
+	 * Admin notice naming the tables that could not be created.
+	 */
+	public function schema_failure_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$failure = get_option( self::SCHEMA_FAILURE_OPTION );
+		if ( ! is_array( $failure ) || empty( $failure['tables'] ) ) {
+			return;
+		}
+
+		$message = sprintf(
+			/* translators: 1: comma-separated table names, 2: human-readable time since the last attempt. */
+			__( 'Dragon Webhook Manager could not create its database table(s): %1$s. The last attempt was %2$s ago; it retries every 10 minutes. Check that the database user has CREATE permission.', 'dragon-webhook-manager' ),
+			implode( ', ', array_keys( (array) $failure['tables'] ) ),
+			human_time_diff( (int) ( $failure['time'] ?? time() ), time() )
+		);
+
+		echo '<div class="notice notice-error"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
 	public function activate(): void {
@@ -120,7 +167,9 @@ class Plugin {
 		$webhooks_table = $wpdb->prefix . 'dwm_webhooks';
 		$logs_table     = $wpdb->prefix . 'dwm_logs';
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		if ( ! function_exists( 'dbDelta' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		}
 
 		// Create webhooks table.
 		$sql_webhooks = "CREATE TABLE {$webhooks_table} (
@@ -164,7 +213,45 @@ class Plugin {
 		) $charset_collate;";
 		dbDelta( $sql_logs );
 
+		// dbDelta() reports what it attempted, not whether it worked; stamping
+		// the version over a missing table would stop maybe_upgrade() retrying.
+		$missing = array();
+		foreach ( array( $webhooks_table, $logs_table ) as $table ) {
+			if ( ! self::table_exists( $table ) ) {
+				$missing[ $table ] = time();
+			}
+		}
+		if ( ! empty( $missing ) ) {
+			update_option(
+				self::SCHEMA_FAILURE_OPTION,
+				array(
+					'tables' => $missing,
+					'time'   => time(),
+				),
+				false
+			);
+			set_transient( self::SCHEMA_RETRY_TRANSIENT, time(), self::SCHEMA_RETRY_DELAY );
+			return;
+		}
+
+		delete_option( self::SCHEMA_FAILURE_OPTION );
+		delete_transient( self::SCHEMA_RETRY_TRANSIENT );
 		update_option( 'dragonwebhookmanager_db_version', DRAGONWEBHOOKMANAGER_VERSION );
+	}
+
+	/**
+	 * Whether a table is present in the database.
+	 *
+	 * @param string $table Fully-qualified table name.
+	 * @return bool
+	 */
+	private static function table_exists( string $table ): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema check on plugin's custom tables.
+		$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+
+		return is_string( $found ) && 0 === strcasecmp( $found, $table );
 	}
 
 	private function set_default_options(): void {
