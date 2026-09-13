@@ -95,6 +95,7 @@ class Plugin {
 		$this->logger   = new Logger();
 		$this->triggers = new Triggers( $this->webhook, $this->payload, $this->logger );
 		$this->admin    = new Admin( $this->webhook, $this->logger );
+		( new Pro_Pointer() )->init_hooks();
 		$this->ajax     = new Ajax( $this->webhook, $this->logger, $this->payload );
 
 		// Integration hook API for add-ons (re-delivery and logging).

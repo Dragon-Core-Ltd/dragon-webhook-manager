@@ -219,3 +219,8 @@ if ( ! function_exists( 'dbDelta' ) ) {
 require_once __DIR__ . '/../includes/class-webhook.php';
 require_once __DIR__ . '/../includes/class-plugin.php';
 require_once __DIR__ . '/../includes/class-admin.php';
+
+require_once __DIR__ . '/../includes/class-pro-pointer.php';
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+	define( 'DAY_IN_SECONDS', 86400 );
+}

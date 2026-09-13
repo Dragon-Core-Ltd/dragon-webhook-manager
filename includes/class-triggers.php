@@ -242,6 +242,15 @@ class Triggers {
 		// Fires on a failed delivery so listeners can schedule a re-delivery.
 		if ( ! $result['success'] ) {
 			do_action( 'dragonwebhookmanager_delivery_failed', $log_id, $webhook, $context );
+		} else {
+			/**
+			 * Fires when a webhook was delivered and the endpoint accepted it.
+			 *
+			 * @param int   $log_id  Log row id.
+			 * @param array $webhook Webhook definition.
+			 * @param array $context Trigger context.
+			 */
+			do_action( 'dragonwebhookmanager_delivery_succeeded', $log_id, $webhook, $context );
 		}
 	}
 

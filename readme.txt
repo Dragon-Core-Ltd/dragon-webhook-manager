@@ -4,7 +4,7 @@ Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.12
+Stable tag: 1.0.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,10 @@ Seven days by default. Change the retention period (1 to 365 days) and the deliv
 The plugin works alongside WooCommerce but ships no WooCommerce-specific triggers of its own. Other plugins can register additional triggers through the `dragonwebhookmanager_triggers` filter; see the Pro Features section above for an add-on that does.
 
 == Changelog ==
+
+= 1.0.13 =
+* An "Upgrade to Pro" link on the Plugins screen, a one-line pointer at the foot of the plugin's own screens, and a single dismissible note once the plugin has done its job. All three disappear when the Pro add-on is active; nothing in the free plugin is locked or changed.
+* New `dragonwebhookmanager_delivery_succeeded` action fires when an endpoint accepts a delivery.
 
 = 1.0.12 =
 * Fixed: webhook URLs with an internationalised (non-ASCII) host name, such as https://bücher.example/hook, can now be saved and tested. The host is stored in its ASCII (punycode) form; the delivery safety checks run on that form as before. Plain ASCII URLs are stored exactly as entered.
