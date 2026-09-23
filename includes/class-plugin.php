@@ -45,6 +45,7 @@ class Plugin {
 
 	private function __construct() {
 		self::migrate_legacy_prefix();
+		add_action( 'init', array( __CLASS__, 'ensure_scheduled' ) );
 		$this->init_components();
 	}
 
@@ -84,6 +85,13 @@ class Plugin {
 		if ( $legacy_cron ) {
 			wp_unschedule_event( $legacy_cron, 'dwm_cleanup_logs' );
 		}
+	}
+
+	/**
+	 * Schedule the daily dragonwebhookmanager_cleanup_logs event if it is missing. Runs on init because
+	 * scheduling reads every plugin's translated cron_schedules labels.
+	 */
+	public static function ensure_scheduled(): void {
 		if ( ! wp_next_scheduled( 'dragonwebhookmanager_cleanup_logs' ) ) {
 			wp_schedule_event( time(), 'daily', 'dragonwebhookmanager_cleanup_logs' );
 		}
