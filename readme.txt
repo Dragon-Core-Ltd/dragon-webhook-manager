@@ -4,7 +4,7 @@ Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.14
+Stable tag: 1.0.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,13 @@ The plugin works alongside WooCommerce but ships no WooCommerce-specific trigger
 
 == Changelog ==
 
+= 1.0.15 =
+* Fixed: the plugin now runs the template-variable filters, so Dragon Webhook Manager Pro's WooCommerce placeholders are listed and filled.
+* Fixed: test sends fill post, user and comment variables with sample data.
+* Fixed: delivery log times are stored in UTC, so they show correctly on every server.
+* The default template for new webhooks uses a real variable.
+* Every screen, email and alert is now translatable, and translations bundled in the plugin's languages folder now load. Counts use proper plural forms, and numbers and dates follow your site's language.
+
 = 1.0.14 =
 * Fixed: when one of this plugin's scheduled tasks needed re-creating, it was scheduled before WordPress had finished loading, which made WordPress log "translation loading was triggered too early" notices that named other plugins. Scheduling now waits until WordPress is ready. The notices only appeared with debug logging switched on.
 
@@ -192,6 +199,9 @@ Dragon Webhook Manager sends data from your WordPress site to external URLs that
 For more information, visit [Dragon Core](https://dragoncore.ltd/).
 
 == Upgrade Notice ==
+
+= 1.0.15 =
+WooCommerce placeholders from Pro now fill in, and test sends fill every variable.
 
 = 1.0.12 =
 Internationalised webhook URLs can now be saved; table-setup reliability fixes. Existing webhooks and logs are unaffected.
