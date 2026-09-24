@@ -4,7 +4,7 @@ Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.13
+Stable tag: 1.0.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,9 @@ Seven days by default. Change the retention period (1 to 365 days) and the deliv
 The plugin works alongside WooCommerce but ships no WooCommerce-specific triggers of its own. Other plugins can register additional triggers through the `dragonwebhookmanager_triggers` filter; see the Pro Features section above for an add-on that does.
 
 == Changelog ==
+
+= 1.0.14 =
+* Fixed: when one of this plugin's scheduled tasks needed re-creating, it was scheduled before WordPress had finished loading, which made WordPress log "translation loading was triggered too early" notices that named other plugins. Scheduling now waits until WordPress is ready. The notices only appeared with debug logging switched on.
 
 = 1.0.13 =
 * An "Upgrade to Pro" link on the Plugins screen, a one-line pointer at the foot of the plugin's own screens, and a single dismissible note once the plugin has done its job. All three disappear when the Pro add-on is active; nothing in the free plugin is locked or changed.
