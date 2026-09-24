@@ -116,7 +116,10 @@
 			var $form = $(this);
 			var $btn = $('#dwm-save-webhook');
 
-			$btn.prop('disabled', true).text('Saving...');
+			if (!$btn.data('label')) {
+				$btn.data('label', $btn.text());
+			}
+			$btn.prop('disabled', true).text(dwmAdmin.i18n.saving);
 
 			$.ajax({
 				url: dwmAdmin.ajaxUrl,
@@ -131,12 +134,12 @@
 						}, 1000);
 					} else {
 						DWM.showToast(response.data.message || dwmAdmin.i18n.error, 'error');
-						$btn.prop('disabled', false).text('Save Webhook');
+						$btn.prop('disabled', false).text($btn.data('label'));
 					}
 				},
 				error: function() {
 					DWM.showToast(dwmAdmin.i18n.error, 'error');
-					$btn.prop('disabled', false).text('Save Webhook');
+					$btn.prop('disabled', false).text($btn.data('label'));
 				}
 			});
 		},
@@ -146,29 +149,34 @@
 			var $form = $('#dwm-webhook-form');
 			var $btn = $(this);
 
-			$btn.prop('disabled', true).text('Testing...');
+			if (!$btn.data('label')) {
+				$btn.data('label', $btn.text());
+			}
+			$btn.prop('disabled', true).text(dwmAdmin.i18n.testing);
 
 			$.ajax({
 				url: dwmAdmin.ajaxUrl,
 				method: 'POST',
 				data: $form.serialize() + '&action=dragonwebhookmanager_test_webhook&nonce=' + dwmAdmin.nonce,
 				success: function(response) {
+					var i18n = dwmAdmin.i18n;
+					var data = response.data || {};
 					var html = '';
 					if (response.success) {
 						html = '<p class="dwm-status-success" style="padding: 8px; border-radius: 4px;">' +
-							'<strong>Success!</strong> ' + response.data.message + '</p>';
+							'<strong>' + DWM.escapeHtml(i18n.testSuccess) + '</strong> ' + DWM.escapeHtml(data.message || '') + '</p>';
 					} else {
 						html = '<p class="dwm-status-failed" style="padding: 8px; border-radius: 4px;">' +
-							'<strong>Failed:</strong> ' + (response.data.message || 'Unknown error') + '</p>';
+							'<strong>' + DWM.escapeHtml(i18n.testFailed) + '</strong> ' + DWM.escapeHtml(data.message || i18n.error) + '</p>';
 					}
 
-					html += '<p><strong>Response Code:</strong> ' + (response.data.response_code || 'N/A') + '</p>';
-					html += '<p><strong>Duration:</strong> ' + (response.data.duration_ms || 0) + 'ms</p>';
+					html += '<p><strong>' + DWM.escapeHtml(i18n.responseCode) + '</strong> ' + DWM.escapeHtml(String(data.response_code || i18n.notAvailable)) + '</p>';
+					html += '<p><strong>' + DWM.escapeHtml(i18n.duration) + '</strong> ' + DWM.escapeHtml(data.duration || '-') + '</p>';
 
-					if (response.data.response_body) {
-						html += '<p><strong>Response Body:</strong></p>';
+					if (data.response_body) {
+						html += '<p><strong>' + DWM.escapeHtml(i18n.responseBody) + '</strong></p>';
 						html += '<pre style="background: #f6f7f7; padding: 10px; overflow: auto; max-height: 200px;">' +
-							DWM.escapeHtml(response.data.response_body) + '</pre>';
+							DWM.escapeHtml(data.response_body) + '</pre>';
 					}
 
 					$('.dwm-test-result-body').html(html);
@@ -178,7 +186,7 @@
 					DWM.showToast(dwmAdmin.i18n.error, 'error');
 				},
 				complete: function() {
-					$btn.prop('disabled', false).text('Test Webhook');
+					$btn.prop('disabled', false).text($btn.data('label'));
 				}
 			});
 		},
@@ -189,7 +197,7 @@
 
 			if (navigator.clipboard) {
 				navigator.clipboard.writeText(text);
-				DWM.showToast('Copied: ' + text, 'success');
+				DWM.showToast(dwmAdmin.i18n.copied.replace('%s', text), 'success');
 			}
 		},
 
@@ -268,10 +276,13 @@
 			$('#dwm-log-method').text(log.request_method || '-');
 			$('#dwm-log-req-headers').text(DWM.formatJson(log.request_headers));
 			$('#dwm-log-req-body').text(DWM.formatJson(log.request_body));
-			$('#dwm-log-status').html('<span class="dwm-status-badge dwm-status-' + log.status + '">' +
-				log.status.charAt(0).toUpperCase() + log.status.slice(1) + '</span>');
+			$('#dwm-log-status').empty().append(
+				$('<span></span>')
+					.addClass('dwm-status-badge dwm-status-' + String(log.status || ''))
+					.text(log.status_label || log.status || '')
+			);
 			$('#dwm-log-response-code').text(log.response_code || '-');
-			$('#dwm-log-duration').text((log.duration_ms || 0) + 'ms');
+			$('#dwm-log-duration').text(log.duration_label || '-');
 
 			if (log.error_message) {
 				$('#dwm-log-error').text(log.error_message);
@@ -287,7 +298,7 @@
 			var details = Array.isArray(log.details) ? log.details : [];
 			$.each(details, function(_, pair) {
 				var $row = $('<p></p>');
-				$row.append($('<strong></strong>').text(pair.label + ': '));
+				$row.append($('<strong></strong>').text(dwmAdmin.i18n.detailLabel.replace('%s', pair.label) + ' '));
 				$row.append($('<span></span>').text(pair.value));
 				$extra.append($row);
 			});

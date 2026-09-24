@@ -83,6 +83,7 @@ final class SchemaThrottleTest extends TestCase {
 		$html = $this->notice();
 		$this->assertStringContainsString( 'notice-error', $html );
 		$this->assertStringContainsString( 'wp_dwm_webhooks', $html );
+		$this->assertStringContainsString( 'database tables: wp_dwm_webhooks, wp_dwm_logs.', $html );
 
 		$GLOBALS['dragonwebhookmanager_test_can'] = false;
 		$this->assertSame( '', $this->notice() );

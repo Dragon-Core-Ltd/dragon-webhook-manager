@@ -41,10 +41,16 @@ if ( '' !== $dragonwebhookmanager_current_trigger ) {
 	}
 }
 
+$dragonwebhookmanager_headers_placeholder = sprintf(
+	/* translators: %s: example access token placeholder. */
+	__( "Content-Type: application/json\nAuthorization: Bearer %s", 'dragon-webhook-manager' ),
+	__( 'your-token', 'dragon-webhook-manager' )
+);
+
 // Default payload template
 $dragonwebhookmanager_default_payload = '{
-  "event": "{{trigger_event}}",
   "site": "{{site_name}}",
+  "url": "{{site_url}}",
   "timestamp": "{{timestamp_iso}}"
 }';
 ?>
@@ -163,8 +169,7 @@ $dragonwebhookmanager_default_payload = '{
 						name="headers"
 						class="large-text code"
 						rows="3"
-						placeholder="Content-Type: application/json
-Authorization: Bearer your-token"><?php echo esc_textarea( $dragonwebhookmanager_headers_display ); ?></textarea>
+						placeholder="<?php echo esc_attr( $dragonwebhookmanager_headers_placeholder ); ?>"><?php echo esc_textarea( $dragonwebhookmanager_headers_display ); ?></textarea>
 					<p class="description"><?php esc_html_e( 'One header per line in "Key: Value" format.', 'dragon-webhook-manager' ); ?></p>
 				</td>
 			</tr>

@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Logger {
 
+	/**
+	 * Stored in place of a secret header value; translated at display.
+	 */
+	public const REDACTED = '[redacted]';
+
 	private string $table;
 
 	public function __construct() {
@@ -37,8 +42,9 @@ class Logger {
 				'request_headers' => $this->redact_headers( $webhook['headers'] ?? '' ),
 				'request_body'    => $payload,
 				'status'          => 'pending',
+				'created_at'      => current_time( 'mysql', true ),
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
 		return $wpdb->insert_id;
@@ -62,7 +68,7 @@ class Logger {
 
 		foreach ( $decoded as $name => $value ) {
 			if ( preg_match( '/authorization|cookie|api[-_]?key|token|secret|password/i', (string) $name ) ) {
-				$decoded[ $name ] = '[redacted]';
+				$decoded[ $name ] = self::REDACTED;
 			}
 		}
 
@@ -215,9 +221,9 @@ class Logger {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Scheduled cleanup of plugin's custom table.
 		$wpdb->query(
 			$wpdb->prepare(
-				'DELETE FROM %i WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)',
+				'DELETE FROM %i WHERE created_at < %s',
 				$this->table,
-				$retention_days
+				gmdate( 'Y-m-d H:i:s', time() - $retention_days * DAY_IN_SECONDS )
 			)
 		);
 	}
@@ -253,8 +259,9 @@ class Logger {
 				'webhook_id'    => (int) ( $data['webhook_id'] ?? 0 ),
 				'trigger_event' => (string) ( $data['trigger_event'] ?? '' ),
 				'status'        => (string) ( $data['status'] ?? 'pending' ),
+				'created_at'    => current_time( 'mysql', true ),
 			),
-			array( '%d', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s' )
 		);
 
 		return (int) $wpdb->insert_id;

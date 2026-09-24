@@ -117,6 +117,18 @@ class Admin {
 					'testSent'         => __( 'Test webhook sent.', 'dragon-webhook-manager' ),
 					'logsCleared'      => __( 'Logs cleared.', 'dragon-webhook-manager' ),
 					'error'            => __( 'An error occurred.', 'dragon-webhook-manager' ),
+					'saving'           => __( 'Saving...', 'dragon-webhook-manager' ),
+					'testing'          => __( 'Testing...', 'dragon-webhook-manager' ),
+					'testSuccess'      => __( 'Success!', 'dragon-webhook-manager' ),
+					'testFailed'       => __( 'Failed:', 'dragon-webhook-manager' ),
+					'responseCode'     => __( 'Response Code:', 'dragon-webhook-manager' ),
+					'duration'         => __( 'Duration:', 'dragon-webhook-manager' ),
+					'responseBody'     => __( 'Response Body:', 'dragon-webhook-manager' ),
+					'notAvailable'     => __( 'N/A', 'dragon-webhook-manager' ),
+					/* translators: %s: the template variable that was copied, such as {{post_title}}. */
+					'copied'           => __( 'Copied: %s', 'dragon-webhook-manager' ),
+					/* translators: %s: add-on supplied detail label in the delivery details modal. */
+					'detailLabel'      => __( '%s:', 'dragon-webhook-manager' ),
 				),
 			)
 		);
@@ -220,9 +232,66 @@ class Admin {
 	 */
 	public static function with_details( array $logs ): array {
 		foreach ( $logs as $i => $log ) {
-			$logs[ $i ]['details'] = self::log_details( $log );
+			$logs[ $i ]['details']        = self::log_details( $log );
+			$logs[ $i ]['status_label']   = self::status_label( (string) ( $log['status'] ?? '' ) );
+			$logs[ $i ]['duration_label'] = self::duration_label( (int) ( $log['duration_ms'] ?? 0 ) );
+			if ( isset( $log['request_headers'] ) && is_string( $log['request_headers'] ) ) {
+				$logs[ $i ]['request_headers'] = self::display_headers( $log['request_headers'] );
+			}
 		}
 		return $logs;
+	}
+
+	/**
+	 * Stored request headers with the redaction marker shown in the site language.
+	 *
+	 * @param string $headers JSON-encoded header map as stored.
+	 * @return string JSON for display; the stored value when it is not a map.
+	 */
+	public static function display_headers( string $headers ): string {
+		$decoded = json_decode( $headers, true );
+		if ( ! is_array( $decoded ) ) {
+			return $headers;
+		}
+
+		foreach ( $decoded as $name => $value ) {
+			if ( Logger::REDACTED === $value ) {
+				$decoded[ $name ] = __( '[redacted]', 'dragon-webhook-manager' );
+			}
+		}
+
+		$encoded = wp_json_encode( $decoded );
+		return is_string( $encoded ) ? $encoded : $headers;
+	}
+
+	/**
+	 * Localised duration in milliseconds, such as "1,250 ms".
+	 *
+	 * @param int $ms Duration in milliseconds.
+	 * @return string
+	 */
+	public static function duration_label( int $ms ): string {
+		return sprintf(
+			/* translators: %s: duration in milliseconds. */
+			__( '%s ms', 'dragon-webhook-manager' ),
+			number_format_i18n( $ms )
+		);
+	}
+
+	/**
+	 * Translated label for a stored delivery status code.
+	 *
+	 * @param string $status Status code (success, failed, pending).
+	 * @return string Label, or the raw code when it is not a known status.
+	 */
+	public static function status_label( string $status ): string {
+		$labels = array(
+			'success' => __( 'Success', 'dragon-webhook-manager' ),
+			'failed'  => __( 'Failed', 'dragon-webhook-manager' ),
+			'pending' => __( 'Pending', 'dragon-webhook-manager' ),
+		);
+
+		return $labels[ $status ] ?? $status;
 	}
 
 	/**
@@ -257,8 +326,23 @@ class Admin {
 			if ( '' === $text ) {
 				continue;
 			}
+			$label = ucfirst( str_replace( '_', ' ', $key ) );
+
+			/**
+			 * Filters the display label for one add-on supplied log detail.
+			 *
+			 * Add-ons return a translated label for the keys they own; the
+			 * default is the key with underscores as spaces, first letter
+			 * capitalised.
+			 *
+			 * @param string $label Default label.
+			 * @param string $key   Detail key.
+			 * @param array  $log   Log row.
+			 */
+			$label = apply_filters( 'dragonwebhookmanager_log_detail_label', $label, $key, $log );
+
 			$pairs[] = array(
-				'label' => ucfirst( str_replace( '_', ' ', $key ) ),
+				'label' => is_scalar( $label ) && '' !== (string) $label ? (string) $label : ucfirst( str_replace( '_', ' ', $key ) ),
 				'value' => $text,
 			);
 		}

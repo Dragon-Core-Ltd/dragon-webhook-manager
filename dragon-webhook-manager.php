@@ -55,6 +55,14 @@ function dragonwebhookmanager_deactivate(): void {
 register_deactivation_hook( __FILE__, __NAMESPACE__ . '\dragonwebhookmanager_deactivate' );
 
 /**
+ * Load translations.
+ */
+function dragonwebhookmanager_load_textdomain(): void {
+	load_plugin_textdomain( 'dragon-webhook-manager', false, dirname( DRAGONWEBHOOKMANAGER_PLUGIN_BASENAME ) . '/languages' );
+}
+add_action( 'init', __NAMESPACE__ . '\dragonwebhookmanager_load_textdomain', 0 );
+
+/**
  * Initialize plugin
  */
 function dragonwebhookmanager_init(): void {

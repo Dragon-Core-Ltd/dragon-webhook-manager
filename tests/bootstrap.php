@@ -172,6 +172,25 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( '_n' ) ) {
+	function _n( $single, $plural, $number, $domain = 'default' ) { // phpcs:ignore WordPress.WP.I18n
+		unset( $domain );
+		return 1 === (int) $number ? $single : $plural;
+	}
+}
+
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	function number_format_i18n( $number, $decimals = 0 ) {
+		return number_format( (float) $number, abs( (int) $decimals ), '.', ',' );
+	}
+}
+
+if ( ! function_exists( 'wp_get_list_item_separator' ) ) {
+	function wp_get_list_item_separator() {
+		return __( ', ' ); // phpcs:ignore WordPress.WP.I18n
+	}
+}
+
 if ( ! function_exists( 'esc_html' ) ) {
 	function esc_html( $text ) {
 		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
@@ -219,8 +238,11 @@ if ( ! function_exists( 'dbDelta' ) ) {
 require_once __DIR__ . '/../includes/class-webhook.php';
 require_once __DIR__ . '/../includes/class-plugin.php';
 require_once __DIR__ . '/../includes/class-admin.php';
+require_once __DIR__ . '/../includes/class-logger.php';
 
 require_once __DIR__ . '/../includes/class-pro-pointer.php';
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 	define( 'DAY_IN_SECONDS', 86400 );
 }
+
+require_once __DIR__ . '/wp-objects.php';

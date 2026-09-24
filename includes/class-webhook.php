@@ -302,7 +302,11 @@ class Webhook {
 				$response_code
 			);
 		} elseif ( $response_code >= 400 ) {
-			$error_message = "HTTP {$response_code}";
+			$error_message = sprintf(
+				/* translators: %d: HTTP status code. */
+				__( 'HTTP %d: the endpoint returned an error status.', 'dragon-webhook-manager' ),
+				$response_code
+			);
 		} else {
 			$error_message = '';
 		}

@@ -204,7 +204,7 @@ class Ajax {
 		}
 
 		// Create sample context
-		$context = $this->get_sample_context( $webhook['trigger_event'] );
+		$context = Payload::sample_context( (string) $webhook['trigger_event'] );
 
 		// Parse payload
 		$payload = $this->payload->parse( $webhook['payload_template'], $context );
@@ -219,6 +219,7 @@ class Ajax {
 					'response_code' => $result['response_code'],
 					'response_body' => $result['response_body'],
 					'duration_ms'   => $result['duration_ms'],
+					'duration'      => Admin::duration_label( (int) $result['duration_ms'] ),
 				)
 			);
 		} else {
@@ -228,6 +229,7 @@ class Ajax {
 					'response_code' => $result['response_code'],
 					'response_body' => $result['response_body'],
 					'duration_ms'   => $result['duration_ms'],
+					'duration'      => Admin::duration_label( (int) $result['duration_ms'] ),
 				)
 			);
 		}
@@ -325,61 +327,5 @@ class Ajax {
 		}
 
 		return $headers;
-	}
-
-	/**
-	 * Get sample context for testing
-	 */
-	private function get_sample_context( string $trigger_event ): array {
-		$context = array();
-
-		// Create sample post
-		$sample_post                = new \stdClass();
-		$sample_post->ID            = 123;
-		$sample_post->post_title    = 'Sample Post Title';
-		$sample_post->post_content  = 'This is sample post content for testing webhooks.';
-		$sample_post->post_excerpt  = 'Sample excerpt';
-		$sample_post->post_type     = 'post';
-		$sample_post->post_status   = 'publish';
-		$sample_post->post_author   = 1;
-		$sample_post->post_date     = current_time( 'mysql' );
-		$sample_post->post_modified = current_time( 'mysql' );
-
-		// Create sample user
-		$sample_user                  = new \stdClass();
-		$sample_user->ID              = 1;
-		$sample_user->user_email      = 'test@example.com';
-		$sample_user->user_login      = 'testuser';
-		$sample_user->display_name    = 'Test User';
-		$sample_user->first_name      = 'Test';
-		$sample_user->last_name       = 'User';
-		$sample_user->roles           = array( 'subscriber' );
-		$sample_user->user_registered = current_time( 'mysql' );
-
-		// Create sample comment
-		$sample_comment                       = new \stdClass();
-		$sample_comment->comment_ID           = 456;
-		$sample_comment->comment_author       = 'Commenter Name';
-		$sample_comment->comment_author_email = 'commenter@example.com';
-		$sample_comment->comment_author_url   = 'https://example.com';
-		$sample_comment->comment_content      = 'This is a sample comment.';
-		$sample_comment->comment_date         = current_time( 'mysql' );
-		$sample_comment->comment_post_ID      = 123;
-		$sample_comment->comment_approved     = '1';
-
-		// Add context based on trigger
-		if ( in_array( $trigger_event, array( 'post_published', 'post_updated', 'post_trashed' ), true ) ) {
-			$context['post'] = (object) $sample_post;
-		}
-
-		if ( in_array( $trigger_event, array( 'user_registered', 'user_login' ), true ) ) {
-			$context['user'] = (object) $sample_user;
-		}
-
-		if ( in_array( $trigger_event, array( 'comment_submitted', 'comment_approved' ), true ) ) {
-			$context['comment'] = (object) $sample_comment;
-		}
-
-		return $context;
 	}
 }

@@ -16,49 +16,79 @@ class Triggers {
 	private Logger $logger;
 
 	/**
-	 * Built-in triggers with their WordPress hooks.
+	 * Built-in triggers: event key => category code and WordPress hook.
 	 *
-	 * Additional triggers can be registered through the
-	 * `dragonwebhookmanager_triggers` filter; read the full list with
-	 * get_triggers() rather than this constant.
+	 * Holds codes only; labels are translated at read time. Additional
+	 * triggers can be registered through the `dragonwebhookmanager_triggers`
+	 * filter; read the full list with get_triggers() rather than this constant.
 	 */
 	public const TRIGGERS = array(
 		'post_published'    => array(
-			'label'    => 'Post Published',
-			'category' => 'Content',
+			'category' => 'content',
 			'hook'     => 'transition_post_status',
 		),
 		'post_updated'      => array(
-			'label'    => 'Post Updated',
-			'category' => 'Content',
+			'category' => 'content',
 			'hook'     => 'post_updated',
 		),
 		'post_trashed'      => array(
-			'label'    => 'Post Trashed',
-			'category' => 'Content',
+			'category' => 'content',
 			'hook'     => 'wp_trash_post',
 		),
 		'user_registered'   => array(
-			'label'    => 'User Registered',
-			'category' => 'User',
+			'category' => 'user',
 			'hook'     => 'user_register',
 		),
 		'user_login'        => array(
-			'label'    => 'User Login',
-			'category' => 'User',
+			'category' => 'user',
 			'hook'     => 'wp_login',
 		),
 		'comment_submitted' => array(
-			'label'    => 'Comment Submitted',
-			'category' => 'Comment',
+			'category' => 'comment',
 			'hook'     => 'wp_insert_comment',
 		),
 		'comment_approved'  => array(
-			'label'    => 'Comment Approved',
-			'category' => 'Comment',
+			'category' => 'comment',
 			'hook'     => 'transition_comment_status',
 		),
 	);
+
+	/**
+	 * Built-in trigger definitions with translated labels and categories.
+	 *
+	 * Built on each call so translations are only requested after the text
+	 * domain has loaded.
+	 *
+	 * @return array<string, array{label: string, category: string, hook: string}>
+	 */
+	private static function builtin_triggers(): array {
+		$labels = array(
+			'post_published'    => __( 'Post Published', 'dragon-webhook-manager' ),
+			'post_updated'      => __( 'Post Updated', 'dragon-webhook-manager' ),
+			'post_trashed'      => __( 'Post Trashed', 'dragon-webhook-manager' ),
+			'user_registered'   => __( 'User Registered', 'dragon-webhook-manager' ),
+			'user_login'        => __( 'User Login', 'dragon-webhook-manager' ),
+			'comment_submitted' => __( 'Comment Submitted', 'dragon-webhook-manager' ),
+			'comment_approved'  => __( 'Comment Approved', 'dragon-webhook-manager' ),
+		);
+
+		$categories = array(
+			'content' => __( 'Content', 'dragon-webhook-manager' ),
+			'user'    => __( 'User', 'dragon-webhook-manager' ),
+			'comment' => __( 'Comment', 'dragon-webhook-manager' ),
+		);
+
+		$triggers = array();
+		foreach ( self::TRIGGERS as $key => $trigger ) {
+			$triggers[ $key ] = array(
+				'label'    => $labels[ $key ] ?? $key,
+				'category' => $categories[ $trigger['category'] ] ?? $trigger['category'],
+				'hook'     => $trigger['hook'],
+			);
+		}
+
+		return $triggers;
+	}
 
 	public function __construct( Webhook $webhook, Payload $payload, Logger $logger ) {
 		$this->webhook = $webhook;
@@ -265,9 +295,10 @@ class Triggers {
 		 *
 		 * @param array $triggers Trigger definitions keyed by trigger event.
 		 */
-		$triggers = apply_filters( 'dragonwebhookmanager_triggers', self::TRIGGERS );
+		$builtin  = self::builtin_triggers();
+		$triggers = apply_filters( 'dragonwebhookmanager_triggers', $builtin );
 		if ( ! is_array( $triggers ) ) {
-			return self::TRIGGERS;
+			return $builtin;
 		}
 
 		$clean = array();
@@ -276,11 +307,11 @@ class Triggers {
 				continue;
 			}
 			$trigger['label']    = isset( $trigger['label'] ) && is_scalar( $trigger['label'] ) ? (string) $trigger['label'] : $key;
-			$trigger['category'] = isset( $trigger['category'] ) && is_scalar( $trigger['category'] ) ? (string) $trigger['category'] : 'Other';
+			$trigger['category'] = isset( $trigger['category'] ) && is_scalar( $trigger['category'] ) ? (string) $trigger['category'] : __( 'Other', 'dragon-webhook-manager' );
 			$clean[ $key ]       = $trigger;
 		}
 
-		return empty( $clean ) ? self::TRIGGERS : $clean;
+		return empty( $clean ) ? $builtin : $clean;
 	}
 
 	/**
@@ -304,7 +335,7 @@ class Triggers {
 		$grouped = array();
 
 		foreach ( self::get_triggers() as $key => $trigger ) {
-			$category = (string) ( $trigger['category'] ?? 'Other' );
+			$category = (string) ( $trigger['category'] ?? __( 'Other', 'dragon-webhook-manager' ) );
 			if ( ! isset( $grouped[ $category ] ) ) {
 				$grouped[ $category ] = array();
 			}

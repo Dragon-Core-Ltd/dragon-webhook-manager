@@ -45,6 +45,44 @@ final class LogDetailsTest extends TestCase {
 		$this->assertSame( 11, $rows[0]['id'], 'core columns are untouched' );
 	}
 
+	public function test_label_filter_can_supply_a_translated_label(): void {
+		add_filter(
+			'dragonwebhookmanager_log_details',
+			static function ( array $details ): array {
+				$details['retry_attempt'] = 'Attempt 2 of 3';
+				$details['other_key']     = 'x';
+				return $details;
+			}
+		);
+		add_filter(
+			'dragonwebhookmanager_log_detail_label',
+			static function ( $label, $key ) {
+				return 'retry_attempt' === $key ? 'Versuch' : $label;
+			}
+		);
+
+		$details = Admin::log_details( array( 'id' => 5 ) );
+
+		$this->assertSame( 'Versuch', $details[0]['label'] );
+		$this->assertSame( 'Other key', $details[1]['label'], 'unclaimed keys keep the derived label' );
+	}
+
+	public function test_rows_carry_a_status_label_and_unknown_codes_fall_back(): void {
+		$rows = Admin::with_details(
+			array(
+				array( 'id' => 1, 'status' => 'failed', 'duration_ms' => 1250 ),
+				array( 'id' => 2, 'status' => 'queued' ),
+			)
+		);
+
+		$this->assertSame( '1,250 ms', $rows[0]['duration_label'] );
+		$this->assertSame( '0 ms', $rows[1]['duration_label'] );
+
+		$this->assertSame( 'Failed', $rows[0]['status_label'] );
+		$this->assertSame( 'failed', $rows[0]['status'], 'the stored code is untouched' );
+		$this->assertSame( 'queued', $rows[1]['status_label'] );
+	}
+
 	public function test_no_short_prefixed_filter_is_offered(): void {
 		// WordPress.org requires a prefix of 4 characters or more, and a human
 		// reviewer pended another plugin in this fleet over a 3-letter one. This

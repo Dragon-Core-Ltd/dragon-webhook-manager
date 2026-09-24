@@ -139,10 +139,16 @@ class Plugin {
 			return;
 		}
 
+		$tables  = array_keys( (array) $failure['tables'] );
 		$message = sprintf(
-			/* translators: 1: comma-separated table names, 2: human-readable time since the last attempt. */
-			__( 'Dragon Webhook Manager could not create its database table(s): %1$s. The last attempt was %2$s ago; it retries every 10 minutes. Check that the database user has CREATE permission.', 'dragon-webhook-manager' ),
-			implode( ', ', array_keys( (array) $failure['tables'] ) ),
+			/* translators: 1: list of table names, 2: human-readable time since the last attempt. */
+			_n(
+				'Dragon Webhook Manager could not create its database table: %1$s. The last attempt was %2$s ago; it retries every 10 minutes. Check that the database user has CREATE permission.',
+				'Dragon Webhook Manager could not create its database tables: %1$s. The last attempt was %2$s ago; it retries every 10 minutes. Check that the database user has CREATE permission.',
+				count( $tables ),
+				'dragon-webhook-manager'
+			),
+			implode( wp_get_list_item_separator(), $tables ),
 			human_time_diff( (int) ( $failure['time'] ?? time() ), time() )
 		);
 

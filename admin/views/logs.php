@@ -19,19 +19,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<!-- Stats Grid -->
 	<div class="dwm-stats-grid">
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['total'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( number_format_i18n( (int) $dragonwebhookmanager_stats['total'] ) ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Total Deliveries', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card dwm-stat-success">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['success'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( number_format_i18n( (int) $dragonwebhookmanager_stats['success'] ) ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Successful', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card dwm-stat-error">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['failed'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( number_format_i18n( (int) $dragonwebhookmanager_stats['failed'] ) ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Failed', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['avg_duration'] ); ?>ms</span>
+			<span class="dwm-stat-value">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: duration in milliseconds. */
+						__( '%s ms', 'dragon-webhook-manager' ),
+						number_format_i18n( (float) $dragonwebhookmanager_stats['avg_duration'] )
+					)
+				);
+				?>
+			</span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Avg Duration', 'dragon-webhook-manager' ); ?></span>
 		</div>
 	</div>
@@ -75,7 +85,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php if ( empty( $dragonwebhookmanager_logs ) ) : ?>
 				<tr>
 					<td colspan="7" class="dwm-empty-state">
-						<p><?php esc_html_e( 'No delivery logs yet. Deliveries are recorded here each time a webhook fires — use "Send Test" on a webhook to see one now.', 'dragon-webhook-manager' ); ?></p>
+						<p><?php esc_html_e( 'No delivery logs yet. Deliveries are recorded here each time a webhook fires - use "Test Webhook" on a webhook to see one now.', 'dragon-webhook-manager' ); ?></p>
 					</td>
 				</tr>
 			<?php else : ?>
@@ -95,7 +105,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</td>
 						<td class="column-status">
 							<span class="dwm-status-badge dwm-status-<?php echo esc_attr( $dragonwebhookmanager_log['status'] ); ?>">
-								<?php echo esc_html( ucfirst( $dragonwebhookmanager_log['status'] ) ); ?>
+								<?php echo esc_html( $dragonwebhookmanager_log['status_label'] ?? $dragonwebhookmanager_log['status'] ); ?>
 							</span>
 						</td>
 						<td class="column-response">
@@ -108,15 +118,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<?php endif; ?>
 						</td>
 						<td class="column-duration">
-							<?php echo esc_html( $dragonwebhookmanager_log['duration_ms'] ); ?>ms
+							<?php echo esc_html( $dragonwebhookmanager_log['duration_label'] ); ?>
 						</td>
 						<td class="column-time">
 							<?php
 							$dragonwebhookmanager_time = strtotime( $dragonwebhookmanager_log['created_at'] );
-							echo esc_html( human_time_diff( $dragonwebhookmanager_time, time() ) . ' ' . __( 'ago', 'dragon-webhook-manager' ) );
+							echo esc_html(
+								sprintf(
+									/* translators: %s: human-readable time difference, such as "5 mins". */
+									__( '%s ago', 'dragon-webhook-manager' ),
+									human_time_diff( $dragonwebhookmanager_time, time() )
+								)
+							);
 							?>
 							<br>
-							<span class="description"><?php echo esc_html( wp_date( 'Y-m-d H:i:s', $dragonwebhookmanager_time ) ); ?></span>
+							<span class="description"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $dragonwebhookmanager_time ) ); ?></span>
 						</td>
 						<td class="column-actions">
 							<?php if ( 'failed' === $dragonwebhookmanager_log['status'] ) : ?>

@@ -24,14 +24,17 @@ class Payload {
 		// and inject structure into the JSON payload delivered to the endpoint.
 		return preg_replace_callback(
 			'/\{\{(\w+)\}\}/',
-			function ( $matches ) use ( $variables ) {
+			function ( $matches ) use ( $variables, $context ) {
 				$key = $matches[1];
 
-				if ( ! array_key_exists( $key, $variables ) ) {
-					return $matches[0];
+				if ( array_key_exists( $key, $variables ) ) {
+					$value = $variables[ $key ];
+				} else {
+					$value = $this->resolve_extra_variable( $key, $context );
+					if ( null === $value ) {
+						return $matches[0];
+					}
 				}
-
-				$value = $variables[ $key ];
 
 				// Numbers carry no JSON metacharacters and are usually written
 				// unquoted in the template, so pass them through unchanged.
@@ -48,6 +51,42 @@ class Payload {
 			},
 			$template
 		);
+	}
+
+	/**
+	 * Resolve a placeholder that is not a built-in variable through add-ons.
+	 *
+	 * A context entry holding an object (a WP_Post, WP_User, WC_Order...) is
+	 * never offered to the filter: serialising it would publish every field,
+	 * including a user's password hash, to the endpoint.
+	 *
+	 * @param string $key     Placeholder name without braces.
+	 * @param array  $context Trigger context.
+	 * @return string|int|float|null Null leaves the placeholder as written.
+	 */
+	private function resolve_extra_variable( string $key, array $context ) {
+		if ( isset( $context[ $key ] ) && is_object( $context[ $key ] ) ) {
+			return null;
+		}
+
+		/**
+		 * Filters the value of a placeholder that is not a built-in variable.
+		 *
+		 * Return null to leave the placeholder unreplaced. Strings are
+		 * JSON-escaped for a double-quoted position; ints and floats are
+		 * inserted as written. Any other type leaves the placeholder unreplaced.
+		 *
+		 * @param mixed  $value   Null, or a value from an earlier callback.
+		 * @param string $key     Placeholder name without braces.
+		 * @param array  $context Trigger context.
+		 */
+		$value = apply_filters( 'dragonwebhookmanager_parse_variable', null, $key, $context );
+
+		if ( is_bool( $value ) ) {
+			return $value ? '1' : '';
+		}
+
+		return ( is_string( $value ) || is_int( $value ) || is_float( $value ) ) ? $value : null;
 	}
 
 	/**
@@ -143,43 +182,148 @@ class Payload {
 	}
 
 	/**
-	 * Get variable reference for UI
+	 * Get variable reference for UI.
+	 *
+	 * Labels are translated on each call, so call it at render time only.
+	 *
+	 * @return array<string, array<string, string>> Group label => placeholder => description.
 	 */
 	public static function get_variable_reference(): array {
-		return array(
-			'Global'  => array(
-				'{{site_url}}'      => 'Site URL',
-				'{{site_name}}'     => 'Site name',
-				'{{admin_email}}'   => 'Admin email',
-				'{{timestamp}}'     => 'Unix timestamp',
-				'{{timestamp_iso}}' => 'ISO 8601 timestamp',
+		$reference = array(
+			__( 'Global', 'dragon-webhook-manager' )  => array(
+				'{{site_url}}'      => __( 'Site URL', 'dragon-webhook-manager' ),
+				'{{site_name}}'     => __( 'Site name', 'dragon-webhook-manager' ),
+				'{{admin_email}}'   => __( 'Admin email', 'dragon-webhook-manager' ),
+				'{{timestamp}}'     => __( 'Unix timestamp', 'dragon-webhook-manager' ),
+				'{{timestamp_iso}}' => __( 'ISO 8601 timestamp', 'dragon-webhook-manager' ),
 			),
-			'Post'    => array(
-				'{{post_id}}'           => 'Post ID',
-				'{{post_title}}'        => 'Post title',
-				'{{post_content}}'      => 'Post content',
-				'{{post_excerpt}}'      => 'Post excerpt',
-				'{{post_url}}'          => 'Post URL',
-				'{{post_type}}'         => 'Post type',
-				'{{post_status}}'       => 'Post status',
-				'{{post_author_name}}'  => 'Author name',
-				'{{post_author_email}}' => 'Author email',
+			__( 'Post', 'dragon-webhook-manager' )    => array(
+				'{{post_id}}'           => __( 'Post ID', 'dragon-webhook-manager' ),
+				'{{post_title}}'        => __( 'Post title', 'dragon-webhook-manager' ),
+				'{{post_content}}'      => __( 'Post content', 'dragon-webhook-manager' ),
+				'{{post_excerpt}}'      => __( 'Post excerpt', 'dragon-webhook-manager' ),
+				'{{post_url}}'          => __( 'Post URL', 'dragon-webhook-manager' ),
+				'{{post_type}}'         => __( 'Post type', 'dragon-webhook-manager' ),
+				'{{post_status}}'       => __( 'Post status', 'dragon-webhook-manager' ),
+				'{{post_author_name}}'  => __( 'Author name', 'dragon-webhook-manager' ),
+				'{{post_author_email}}' => __( 'Author email', 'dragon-webhook-manager' ),
 			),
-			'User'    => array(
-				'{{user_id}}'           => 'User ID',
-				'{{user_email}}'        => 'User email',
-				'{{user_login}}'        => 'Username',
-				'{{user_display_name}}' => 'Display name',
-				'{{user_role}}'         => 'User role(s)',
+			__( 'User', 'dragon-webhook-manager' )    => array(
+				'{{user_id}}'           => __( 'User ID', 'dragon-webhook-manager' ),
+				'{{user_email}}'        => __( 'User email', 'dragon-webhook-manager' ),
+				'{{user_login}}'        => __( 'Username', 'dragon-webhook-manager' ),
+				'{{user_display_name}}' => __( 'Display name', 'dragon-webhook-manager' ),
+				'{{user_role}}'         => __( 'User roles', 'dragon-webhook-manager' ),
 			),
-			'Comment' => array(
-				'{{comment_id}}'         => 'Comment ID',
-				'{{comment_author}}'     => 'Author name',
-				'{{comment_email}}'      => 'Author email',
-				'{{comment_content}}'    => 'Comment content',
-				'{{comment_post_title}}' => 'Post title',
-				'{{comment_post_url}}'   => 'Post URL',
+			__( 'Comment', 'dragon-webhook-manager' ) => array(
+				'{{comment_id}}'         => __( 'Comment ID', 'dragon-webhook-manager' ),
+				'{{comment_author}}'     => __( 'Author name', 'dragon-webhook-manager' ),
+				'{{comment_email}}'      => __( 'Author email', 'dragon-webhook-manager' ),
+				'{{comment_content}}'    => __( 'Comment content', 'dragon-webhook-manager' ),
+				'{{comment_post_title}}' => __( 'Post title', 'dragon-webhook-manager' ),
+				'{{comment_post_url}}'   => __( 'Post URL', 'dragon-webhook-manager' ),
 			),
 		);
+
+		/**
+		 * Filters the variable reference shown under the payload template.
+		 *
+		 * Add a group as label => array( 'variable_name' => 'Description' ).
+		 * Names may be given with or without their surrounding braces.
+		 *
+		 * @param array $reference Group label => placeholder => description.
+		 */
+		$filtered = apply_filters( 'dragonwebhookmanager_template_variables', $reference );
+		if ( ! is_array( $filtered ) ) {
+			return $reference;
+		}
+
+		$clean = array();
+		foreach ( $filtered as $group => $vars ) {
+			if ( ! is_string( $group ) || ! is_array( $vars ) ) {
+				continue;
+			}
+			foreach ( $vars as $name => $description ) {
+				if ( ! is_string( $name ) || ! is_string( $description ) ) {
+					continue;
+				}
+				$bare = preg_replace( '/^\{\{(\w+)\}\}$/', '$1', $name );
+				if ( ! is_string( $bare ) || 1 !== preg_match( '/^\w+$/', $bare ) ) {
+					continue;
+				}
+				$clean[ $group ][ '{{' . $bare . '}}' ] = $description;
+			}
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Build sample trigger context for a test delivery.
+	 *
+	 * The objects are real core classes filled with sample values, so parse()
+	 * treats them exactly like the objects a live trigger passes. The sample
+	 * post has no author and the sample comment no parent post, so no real
+	 * account or post ends up in a test delivery.
+	 *
+	 * @param string $trigger_event Trigger key.
+	 * @return array Context in the shape the trigger itself dispatches.
+	 */
+	public static function sample_context( string $trigger_event ): array {
+		$now = current_time( 'mysql' );
+
+		if ( in_array( $trigger_event, array( 'post_published', 'post_updated', 'post_trashed' ), true ) ) {
+			return array(
+				'post' => new \WP_Post(
+					(object) array(
+						'ID'            => 123,
+						'post_author'   => '0',
+						'post_title'    => __( 'Sample Post Title', 'dragon-webhook-manager' ),
+						'post_content'  => __( 'This is sample post content for testing webhooks.', 'dragon-webhook-manager' ),
+						'post_excerpt'  => __( 'Sample excerpt', 'dragon-webhook-manager' ),
+						'post_type'     => 'post',
+						'post_status'   => 'publish',
+						'post_date'     => $now,
+						'post_modified' => $now,
+						'filter'        => 'raw',
+					)
+				),
+			);
+		}
+
+		if ( in_array( $trigger_event, array( 'user_registered', 'user_login' ), true ) ) {
+			// Built empty and filled field by field: constructing a WP_User from
+			// an ID would load that account's capabilities from the database.
+			$user                  = new \WP_User();
+			$user->ID              = 1;
+			$user->user_email      = 'test@example.com';
+			$user->user_login      = 'testuser';
+			$user->display_name    = __( 'Test User', 'dragon-webhook-manager' );
+			$user->first_name      = __( 'Test', 'dragon-webhook-manager' );
+			$user->last_name       = __( 'User', 'dragon-webhook-manager' );
+			$user->user_registered = $now;
+			$user->roles           = array( 'subscriber' );
+
+			return array( 'user' => $user );
+		}
+
+		if ( in_array( $trigger_event, array( 'comment_submitted', 'comment_approved' ), true ) ) {
+			return array(
+				'comment' => new \WP_Comment(
+					(object) array(
+						'comment_ID'           => '456',
+						'comment_post_ID'      => '0',
+						'comment_author'       => __( 'Commenter Name', 'dragon-webhook-manager' ),
+						'comment_author_email' => 'commenter@example.com',
+						'comment_author_url'   => 'https://example.com',
+						'comment_content'      => __( 'This is a sample comment.', 'dragon-webhook-manager' ),
+						'comment_date'         => $now,
+						'comment_approved'     => '1',
+					)
+				),
+			);
+		}
+
+		return array();
 	}
 }

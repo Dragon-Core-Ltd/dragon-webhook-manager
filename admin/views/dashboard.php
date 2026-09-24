@@ -36,19 +36,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<!-- Stats Grid -->
 	<div class="dwm-stats-grid">
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_webhook_count ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( number_format_i18n( (int) $dragonwebhookmanager_webhook_count ) ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Webhooks', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['today'] ); ?></span>
+			<span class="dwm-stat-value"><?php echo esc_html( number_format_i18n( (int) $dragonwebhookmanager_stats['today'] ) ); ?></span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Deliveries Today', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['success_rate'] ); ?>%</span>
+			<span class="dwm-stat-value">
+				<?php
+				$dragonwebhookmanager_rate = (float) $dragonwebhookmanager_stats['success_rate'];
+				echo esc_html(
+					sprintf(
+						/* translators: %s: percentage of deliveries that succeeded. */
+						__( '%s%%', 'dragon-webhook-manager' ),
+						number_format_i18n( $dragonwebhookmanager_rate, floor( $dragonwebhookmanager_rate ) === $dragonwebhookmanager_rate ? 0 : 1 )
+					)
+				);
+				?>
+			</span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Success Rate', 'dragon-webhook-manager' ); ?></span>
 		</div>
 		<div class="dwm-stat-card">
-			<span class="dwm-stat-value"><?php echo esc_html( $dragonwebhookmanager_stats['avg_duration'] ); ?>ms</span>
+			<span class="dwm-stat-value">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: duration in milliseconds. */
+						__( '%s ms', 'dragon-webhook-manager' ),
+						number_format_i18n( (float) $dragonwebhookmanager_stats['avg_duration'] )
+					)
+				);
+				?>
+			</span>
 			<span class="dwm-stat-label"><?php esc_html_e( 'Avg Response', 'dragon-webhook-manager' ); ?></span>
 		</div>
 	</div>
