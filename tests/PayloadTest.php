@@ -22,7 +22,7 @@ final class PayloadTest extends TestCase {
 
 	private const TEMPLATE = '{"title":"{{post_title}}","id":{{post_id}},"author":"{{post_author_name}}","email":"{{post_author_email}}","status":"{{post_status}}","url":"{{post_url}}","excerpt":"{{post_excerpt}}","unknown":"{{not_a_var}}","post":"{{post}}","event":"{{trigger_event}}","site":"{{site_name}}","home":"{{site_url}}","admin":"{{admin_email}}"}';
 
-	private const EXPECTED_POST = '{"title":"He said \"hi\" \\\\ back\/slash caf\u00e9\nline 2","id":42,"author":"Ann \"A\" O\'Neil","email":"ann@example.test","status":"publish","url":"https:\/\/example.test\/?p=42","excerpt":"Short <b>excerpt<\/b>","unknown":"{{not_a_var}}","post":"{{post}}","event":"{{trigger_event}}","site":"Site \"Q\" & Co","home":"https:\/\/example.test","admin":"admin@example.test"}';
+	private const EXPECTED_POST = '{"title":"He said \"hi\" \\\\ back\/slash caf\u00e9\nline 2","id":42,"author":"Ann \"A\" O\'Neil","email":"ann@example.test","status":"publish","url":"https:\/\/example.test\/?p=42","excerpt":"Short <b>excerpt<\/b>","unknown":"{{not_a_var}}","post":"{{post}}","event":"post_published","site":"Site \"Q\" & Co","home":"https:\/\/example.test","admin":"admin@example.test"}';
 
 	private const USER_TEMPLATE = '{"id":{{user_id}},"login":"{{user_login}}","name":"{{user_display_name}}","roles":"{{user_role}}","first":"{{user_first_name}}","user":"{{user}}","order_total":"{{order_total}}"}';
 
@@ -81,7 +81,7 @@ final class PayloadTest extends TestCase {
 	}
 
 	public function test_post_payload_bytes_are_pinned(): void {
-		$payload = ( new Payload() )->parse( self::TEMPLATE, array( 'post' => $this->post() ) );
+		$payload = ( new Payload() )->parse( self::TEMPLATE, array( 'post' => $this->post() ), 'post_published' );
 
 		$this->assertSame( self::EXPECTED_POST, $payload );
 		$this->assertNotNull( json_decode( $payload ) );
@@ -90,9 +90,33 @@ final class PayloadTest extends TestCase {
 	public function test_post_payload_bytes_unchanged_with_an_add_on_filter(): void {
 		$this->add_shipped_pro_callback();
 
-		$payload = ( new Payload() )->parse( self::TEMPLATE, array( 'post' => $this->post() ) );
+		$payload = ( new Payload() )->parse( self::TEMPLATE, array( 'post' => $this->post() ), 'post_published' );
 
 		$this->assertSame( self::EXPECTED_POST, $payload );
+	}
+
+	/**
+	 * Webhooks saved with the old default template contain {{trigger_event}};
+	 * it used to go out as the literal placeholder.
+	 */
+	public function test_trigger_event_is_a_global_variable(): void {
+		$payload = ( new Payload() )->parse( '{"event":"{{trigger_event}}","site":"{{site_name}}"}', array(), 'wc_order_paid' );
+
+		$this->assertSame( '{"event":"wc_order_paid","site":"Site \\"Q\\" & Co"}', $payload );
+	}
+
+	public function test_trigger_event_is_empty_when_the_caller_has_no_trigger(): void {
+		$seen = array();
+		add_filter(
+			'dragonwebhookmanager_parse_variable',
+			static function ( $value, string $key ) use ( &$seen ) {
+				$seen[] = $key;
+				return 'OVERRIDE';
+			}
+		);
+
+		$this->assertSame( '{"event":""}', ( new Payload() )->parse( '{"event":"{{trigger_event}}"}' ) );
+		$this->assertSame( array(), $seen, 'a built-in variable is never offered to add-ons' );
 	}
 
 	public function test_user_payload_bytes_are_pinned_and_never_expose_the_user_object(): void {
@@ -193,6 +217,7 @@ final class PayloadTest extends TestCase {
 			$reference['WooCommerce Orders']
 		);
 		$this->assertSame( 'Site URL', $reference['Global']['{{site_url}}'] );
+		$this->assertArrayHasKey( '{{trigger_event}}', $reference['Global'] );
 	}
 
 	public function test_variable_reference_survives_a_filter_returning_garbage(): void {
@@ -224,5 +249,69 @@ final class PayloadTest extends TestCase {
 			'other'   => array( 'wc_order_paid', '{"t":"{{post_title}}"}', '{"t":"{{post_title}}"}' ),
 		);
 	}
-}
 
+	public function test_sample_context_filter_fills_add_on_triggers(): void {
+		$seen = array();
+		add_filter(
+			'dragonwebhookmanager_sample_context',
+			static function ( $context, string $trigger ) use ( &$seen ) {
+				$seen[] = array( $context, $trigger );
+				if ( 'wc_order_paid' !== $trigger ) {
+					return $context;
+				}
+				$context['order_total'] = '19.99';
+				return $context;
+			}
+		);
+		$this->add_shipped_pro_callback();
+
+		$context = Payload::sample_context( 'wc_order_paid' );
+		$payload = ( new Payload() )->parse( '{"t":"{{order_total}}","e":"{{trigger_event}}"}', $context, 'wc_order_paid' );
+
+		$this->assertSame( '{"t":"19.99","e":"wc_order_paid"}', $payload );
+		$this->assertSame( array( array( array(), 'wc_order_paid' ) ), $seen, 'free passes an empty context for a trigger it does not own' );
+	}
+
+	public function test_sample_context_filter_sees_the_built_in_sample(): void {
+		$seen = null;
+		add_filter(
+			'dragonwebhookmanager_sample_context',
+			static function ( $context ) use ( &$seen ) {
+				$seen = $context;
+				return $context;
+			}
+		);
+
+		$context = Payload::sample_context( 'post_updated' );
+
+		$this->assertInstanceOf( \WP_Post::class, $seen['post'] ?? null );
+		$this->assertSame( $seen, $context );
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function garbage_sample_contexts(): array {
+		return array(
+			'null'   => array( null ),
+			'string' => array( 'order' ),
+			'object' => array( new \stdClass() ),
+			'false'  => array( false ),
+		);
+	}
+
+	#[DataProvider( 'garbage_sample_contexts' )]
+	public function test_sample_context_ignores_a_filter_returning_garbage( $garbage ): void {
+		add_filter(
+			'dragonwebhookmanager_sample_context',
+			static function () use ( $garbage ) {
+				return $garbage;
+			}
+		);
+
+		$context = Payload::sample_context( 'user_login' );
+		$this->assertInstanceOf( \WP_User::class, $context['user'] ?? null );
+
+		$this->assertSame( array(), Payload::sample_context( 'wc_order_paid' ) );
+	}
+}

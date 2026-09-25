@@ -70,6 +70,15 @@ final class SsrfTest extends TestCase {
 		}
 	}
 
+	public function test_is_internal_literal_flags_only_names_and_literals(): void {
+		foreach ( array( 'http://127.0.0.1:9/hook', 'http://[fd00::1]/x', 'https://LOCALHOST/x', 'https://a.localhost/x' ) as $url ) {
+			$this->assertTrue( Webhook::is_internal_literal( $url ), $url );
+		}
+		foreach ( array( 'https://example.test/hook', 'https://8.8.8.8/hook', 'not-a-url' ) as $url ) {
+			$this->assertFalse( Webhook::is_internal_literal( $url ), $url );
+		}
+	}
+
 	public function test_resolve_target_allows_public_ip_literals_without_pinning(): void {
 		// A literal IP has no DNS to rebind, so it is validated but not pinned.
 		$https = Webhook::resolve_target( 'https://93.184.216.34/hook' );
@@ -79,5 +88,42 @@ final class SsrfTest extends TestCase {
 		$v6 = Webhook::resolve_target( 'https://[2606:4700:4700::1111]/hook' );
 		$this->assertFalse( $v6['blocked'] );
 		$this->assertNull( $v6['pin'] );
+	}
+
+	public function test_special_purpose_ranges_filter_var_misses_are_blocked(): void {
+		$blocked = array(
+			'100.100.100.200',        // Alibaba Cloud metadata (100.64.0.0/10 CGNAT).
+			'100.64.0.1',             // CGNAT.
+			'100.127.255.254',        // CGNAT upper edge.
+			'192.0.0.1',              // IETF protocol assignments.
+			'192.0.0.170',            // NAT64 discovery.
+			'198.18.0.1',             // Benchmarking.
+			'224.0.0.1',              // Multicast.
+			'255.255.255.255',        // Broadcast.
+			'64:ff9b::a9fe:a9fe',     // NAT64 of 169.254.169.254.
+			'64:ff9b::7f00:1',        // NAT64 of 127.0.0.1.
+			'64:ff9b::a00:5',         // NAT64 of 10.0.0.5.
+			'64:ff9b:1::1',           // Local-use NAT64 prefix.
+			'::ffff:169.254.169.254', // IPv4-mapped metadata.
+			'::ffff:a9fe:a9fe',       // Same, hex form.
+			'2002:a9fe:a9fe::1',      // 6to4 of 169.254.169.254.
+			'2002:7f00:1::',          // 6to4 of 127.0.0.1.
+			'ff02::1',                // IPv6 multicast.
+			'fec0::1',                // Deprecated site-local.
+			'::',                     // Unspecified.
+			'::127.0.0.1',            // IPv4-compatible (deprecated).
+		);
+
+		foreach ( $blocked as $ip ) {
+			$this->assertTrue( Webhook::is_blocked_ip( $ip ), $ip );
+		}
+	}
+
+	public function test_nat64_of_a_public_address_is_allowed(): void {
+		// A DNS64 resolver synthesises these for every IPv4-only host; blocking
+		// the whole prefix would block every such target.
+		$this->assertFalse( Webhook::is_blocked_ip( '64:ff9b::808:808' ) );
+		$this->assertFalse( Webhook::is_blocked_ip( '100.128.0.1' ), 'just above 100.64.0.0/10' );
+		$this->assertFalse( Webhook::is_blocked_ip( '2002:808:808::1' ), '6to4 of a public address' );
 	}
 }

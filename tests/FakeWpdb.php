@@ -35,6 +35,20 @@ class FakeWpdb {
 
 	public bool $fail_writes = false;
 
+	/**
+	 * Every read/query the code under test issued, decoded to q/a.
+	 *
+	 * @var array<int, array>
+	 */
+	public array $queries = array();
+
+	/**
+	 * When not null, query() returns this instead of running.
+	 *
+	 * @var mixed
+	 */
+	public $query_result = null;
+
 	private int $next_id = 1;
 
 	public function prepare( string $query, ...$args ): string {
@@ -58,7 +72,8 @@ class FakeWpdb {
 	}
 
 	public function get_var( string $sql ) {
-		$p = self::decode( $sql );
+		$p               = self::decode( $sql );
+		$this->queries[] = $p;
 		$q = $p['q'];
 		$a = $p['a'];
 
@@ -82,6 +97,15 @@ class FakeWpdb {
 
 	public function get_row( string $sql, $output = ARRAY_A ) {
 		$p = self::decode( $sql );
+		if ( 'SELECT * FROM %i WHERE id = %d' === $p['q'] ) {
+			list( $table, $id ) = $p['a'];
+			foreach ( $this->rows[ $table ] ?? array() as $row ) {
+				if ( (int) $row['id'] === (int) $id ) {
+					return $row;
+				}
+			}
+			return null;
+		}
 		if ( str_starts_with( $p['q'], 'SELECT * FROM %i WHERE event_id' ) ) {
 			list( $table, $event_id ) = $p['a'];
 			$match = null;
@@ -137,6 +161,18 @@ class FakeWpdb {
 	}
 
 	public function query( string $sql ) {
+		$p               = self::decode( $sql );
+		$this->queries[] = $p;
+		if ( null !== $this->query_result ) {
+			return $this->query_result;
+		}
+		// Mirrors MySQL: DELETE reports affected rows, TRUNCATE reports true.
+		if ( 'DELETE FROM %i' === $p['q'] || 'TRUNCATE TABLE %i' === $p['q'] ) {
+			$table = $p['a'][0];
+			$n     = count( $this->rows[ $table ] ?? array() );
+			$this->rows[ $table ] = array();
+			return 'DELETE FROM %i' === $p['q'] ? $n : true;
+		}
 		return 0;
 	}
 }

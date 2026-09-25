@@ -15,6 +15,14 @@
 $GLOBALS['dragonwebhookmanager_test_users'] = array();
 $GLOBALS['dragonwebhookmanager_test_posts'] = array();
 
+// Registered post types: name => object with public, publicly_queryable and _builtin.
+$GLOBALS['dragonwebhookmanager_test_post_types'] = array(
+	'post'       => (object) array( 'name' => 'post', 'public' => true, 'publicly_queryable' => true, '_builtin' => true ),
+	'page'       => (object) array( 'name' => 'page', 'public' => true, 'publicly_queryable' => false, '_builtin' => true ),
+	'attachment' => (object) array( 'name' => 'attachment', 'public' => true, 'publicly_queryable' => true, '_builtin' => true ),
+	'revision'   => (object) array( 'name' => 'revision', 'public' => false, 'publicly_queryable' => false, '_builtin' => true ),
+);
+
 if ( ! class_exists( 'WP_Post' ) ) {
 	final class WP_Post {
 		public $ID                = 0;
@@ -25,6 +33,7 @@ if ( ! class_exists( 'WP_Post' ) ) {
 		public $post_excerpt      = '';
 		public $post_status       = 'publish';
 		public $post_name         = '';
+		public $post_parent       = 0;
 		public $post_modified     = '0000-00-00 00:00:00';
 		public $post_type         = 'post';
 		public $filter;
@@ -47,6 +56,7 @@ if ( ! class_exists( 'WP_Comment' ) ) {
 		public $comment_date         = '0000-00-00 00:00:00';
 		public $comment_content      = '';
 		public $comment_approved     = '1';
+		public $comment_type         = 'comment';
 
 		public function __construct( $comment ) {
 			foreach ( get_object_vars( $comment ) as $key => $value ) {
@@ -143,5 +153,62 @@ if ( ! function_exists( 'current_time' ) ) {
 	function current_time( $type, $gmt = 0 ) {
 		$ts = time() + ( $gmt ? 0 : (int) round( (float) get_option( 'gmt_offset', 0 ) * 3600 ) );
 		return 'mysql' === $type ? gmdate( 'Y-m-d H:i:s', $ts ) : $ts;
+	}
+}
+
+if ( ! function_exists( 'get_post_types' ) ) {
+	// Names of the registered types, keyed by name (core's default output).
+	function get_post_types( $args = array(), $output = 'names' ) {
+		unset( $args, $output );
+		$names = array_keys( $GLOBALS['dragonwebhookmanager_test_post_types'] );
+		return array_combine( $names, $names );
+	}
+}
+
+if ( ! function_exists( 'get_post_type_object' ) ) {
+	function get_post_type_object( $post_type ) {
+		return is_scalar( $post_type ) ? ( $GLOBALS['dragonwebhookmanager_test_post_types'][ (string) $post_type ] ?? null ) : null;
+	}
+}
+
+if ( ! function_exists( 'is_post_type_viewable' ) ) {
+	// As core: publicly queryable, or built in and public; then filtered.
+	function is_post_type_viewable( $post_type ) {
+		if ( is_scalar( $post_type ) ) {
+			$post_type = get_post_type_object( $post_type );
+			if ( ! $post_type ) {
+				return false;
+			}
+		}
+		if ( ! is_object( $post_type ) ) {
+			return false;
+		}
+		$is_viewable = $post_type->publicly_queryable || ( $post_type->_builtin && $post_type->public );
+		return true === apply_filters( 'is_post_type_viewable', $is_viewable, $post_type );
+	}
+}
+
+if ( ! function_exists( 'wp_is_post_revision' ) ) {
+	// As core: the parent ID for a revision, false otherwise.
+	function wp_is_post_revision( $post ) {
+		$post = get_post( $post );
+		if ( ! $post || 'revision' !== $post->post_type ) {
+			return false;
+		}
+		return (int) $post->post_parent;
+	}
+}
+
+if ( ! function_exists( 'wp_is_post_autosave' ) ) {
+	// As core: the parent ID for an autosave revision, false otherwise.
+	function wp_is_post_autosave( $post ) {
+		$post = get_post( $post );
+		if ( ! $post || 'revision' !== $post->post_type ) {
+			return false;
+		}
+		if ( str_contains( (string) $post->post_name, "{$post->post_parent}-autosave" ) ) {
+			return (int) $post->post_parent;
+		}
+		return false;
 	}
 }

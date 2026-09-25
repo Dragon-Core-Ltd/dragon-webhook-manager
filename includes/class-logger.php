@@ -190,13 +190,16 @@ class Logger {
 			$wpdb->prepare( 'SELECT AVG(duration_ms) FROM %i WHERE status = %s', $this->table, 'success' )
 		);
 
-		// Today's count.
+		// Today's count: the site's calendar day, as a range over the UTC
+		// created_at column (which also lets the index serve it).
+		list( $day_start, $day_end ) = self::local_day_bounds( wp_timezone(), time() );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
 		$today = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(*) FROM %i WHERE DATE(created_at) = %s',
+				'SELECT COUNT(*) FROM %i WHERE created_at >= %s AND created_at < %s',
 				$this->table,
-				gmdate( 'Y-m-d' )
+				$day_start,
+				$day_end
 			)
 		);
 
@@ -207,6 +210,27 @@ class Logger {
 			'success_rate' => $total > 0 ? round( ( $success / $total ) * 100, 1 ) : 0,
 			'avg_duration' => round( $avg_duration, 0 ),
 			'today'        => $today,
+		);
+	}
+
+	/**
+	 * UTC bounds of the site-local calendar day containing a moment.
+	 *
+	 * Built from local midnight today and tomorrow, so a day that is 23 or 25
+	 * hours long (a DST change) is bounded correctly.
+	 *
+	 * @param \DateTimeZone $timezone Site timezone.
+	 * @param int           $now      Unix timestamp.
+	 * @return array{0: string, 1: string} [start, end) as UTC 'Y-m-d H:i:s'.
+	 */
+	public static function local_day_bounds( \DateTimeZone $timezone, int $now ): array {
+		$utc   = new \DateTimeZone( 'UTC' );
+		$start = ( new \DateTimeImmutable( '@' . $now ) )->setTimezone( $timezone )->setTime( 0, 0 );
+		$end   = $start->modify( '+1 day' )->setTime( 0, 0 );
+
+		return array(
+			$start->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+			$end->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
 		);
 	}
 
@@ -229,13 +253,19 @@ class Logger {
 	}
 
 	/**
-	 * Clear all logs
+	 * Clear all logs.
+	 *
+	 * DELETE rather than TRUNCATE: TRUNCATE resets AUTO_INCREMENT, so new rows
+	 * would reuse the IDs of cleared ones and inherit any add-on state keyed
+	 * by log ID.
+	 *
+	 * @return bool Whether the delete ran (false on a database error).
 	 */
-	public function clear_logs(): void {
+	public function clear_logs(): bool {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin-initiated truncate of plugin's custom table.
-		$wpdb->query( $wpdb->prepare( 'TRUNCATE TABLE %i', $this->table ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin-initiated clear of plugin's custom table.
+		return false !== $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $this->table ) );
 	}
 
 	/**
@@ -252,19 +282,60 @@ class Logger {
 	public function create( array $data ): int {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Write to plugin's custom table.
-		$wpdb->insert(
-			$this->table,
-			array(
-				'webhook_id'    => (int) ( $data['webhook_id'] ?? 0 ),
-				'trigger_event' => (string) ( $data['trigger_event'] ?? '' ),
-				'status'        => (string) ( $data['status'] ?? 'pending' ),
-				'created_at'    => current_time( 'mysql', true ),
-			),
-			array( '%d', '%s', '%s', '%s' )
+		$row    = array(
+			'webhook_id'    => (int) ( $data['webhook_id'] ?? 0 ),
+			'trigger_event' => (string) ( $data['trigger_event'] ?? '' ),
+			'status'        => (string) ( $data['status'] ?? 'pending' ),
+			'created_at'    => current_time( 'mysql', true ),
 		);
+		$format = array( '%d', '%s', '%s', '%s' );
+
+		// Optional request details, so the row shows where it was sent.
+		foreach ( array( 'request_url', 'request_method' ) as $column ) {
+			if ( isset( $data[ $column ] ) && is_scalar( $data[ $column ] ) ) {
+				$row[ $column ] = (string) $data[ $column ];
+				$format[]       = '%s';
+			}
+		}
+		if ( isset( $data['request_headers'] ) ) {
+			$row['request_headers'] = $this->redact_headers( $data['request_headers'] );
+			$format[]               = '%s';
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Write to plugin's custom table.
+		$wpdb->insert( $this->table, $row, $format );
 
 		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Record the request a log row stands for: URL, method, (redacted)
+	 * headers and body. Used for rows opened through the add-on API, which
+	 * are created before the payload is rendered.
+	 *
+	 * @param int    $log_id  Log ID.
+	 * @param array  $webhook Webhook as sent (headers already filtered).
+	 * @param string $payload Request body as sent.
+	 * @return bool Whether the row was written.
+	 */
+	public function fill_request( int $log_id, array $webhook, string $payload ): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to plugin's custom table.
+		$result = $wpdb->update(
+			$this->table,
+			array(
+				'request_url'     => (string) ( $webhook['url'] ?? '' ),
+				'request_method'  => (string) ( $webhook['method'] ?? '' ),
+				'request_headers' => $this->redact_headers( $webhook['headers'] ?? '' ),
+				'request_body'    => $payload,
+			),
+			array( 'id' => $log_id ),
+			array( '%s', '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+
+		return false !== $result;
 	}
 
 	/**

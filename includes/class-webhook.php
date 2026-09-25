@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Webhook {
 
+	/**
+	 * HTTP methods a webhook may use.
+	 */
+	public const METHODS = array( 'POST', 'PUT', 'PATCH' );
+
 	private string $table;
 
 	public function __construct() {
@@ -80,6 +85,8 @@ class Webhook {
 
 	/**
 	 * Create webhook
+	 *
+	 * @param array $data Webhook fields, already unslashed.
 	 */
 	public function create( array $data ): int|false {
 		global $wpdb;
@@ -92,9 +99,9 @@ class Webhook {
 				'description'      => sanitize_textarea_field( $data['description'] ?? '' ),
 				'trigger_event'    => sanitize_key( $data['trigger_event'] ),
 				'url'              => esc_url_raw( $data['url'] ),
-				'method'           => in_array( $data['method'] ?? 'POST', array( 'POST', 'PUT', 'PATCH' ), true ) ? $data['method'] : 'POST',
+				'method'           => self::sanitize_method( $data['method'] ?? 'POST' ),
 				'headers'          => wp_json_encode( $data['headers'] ?? array() ),
-				'payload_template' => wp_unslash( $data['payload_template'] ?? '' ), // Don't use wp_kses_post on JSON/template data
+				'payload_template' => (string) ( $data['payload_template'] ?? '' ), // Already unslashed by the caller; stored raw, not through wp_kses_post.
 				'is_active'        => isset( $data['is_active'] ) ? (int) $data['is_active'] : 1,
 			),
 			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
@@ -105,6 +112,9 @@ class Webhook {
 
 	/**
 	 * Update webhook
+	 *
+	 * @param int   $id   Webhook ID.
+	 * @param array $data Webhook fields to change, already unslashed.
 	 */
 	public function update( int $id, array $data ): bool {
 		global $wpdb;
@@ -129,7 +139,7 @@ class Webhook {
 			$format[]           = '%s';
 		}
 		if ( isset( $data['method'] ) ) {
-			$update_data['method'] = in_array( $data['method'], array( 'POST', 'PUT', 'PATCH' ), true ) ? $data['method'] : 'POST';
+			$update_data['method'] = self::sanitize_method( $data['method'] );
 			$format[]              = '%s';
 		}
 		if ( isset( $data['headers'] ) ) {
@@ -137,7 +147,7 @@ class Webhook {
 			$format[]               = '%s';
 		}
 		if ( isset( $data['payload_template'] ) ) {
-			$update_data['payload_template'] = wp_unslash( $data['payload_template'] ); // Don't use wp_kses_post on JSON/template data
+			$update_data['payload_template'] = (string) $data['payload_template']; // Already unslashed by the caller; stored raw, not through wp_kses_post.
 			$format[]                        = '%s';
 		}
 		if ( isset( $data['is_active'] ) ) {
@@ -201,6 +211,110 @@ class Webhook {
 	}
 
 	/**
+	 * Normalise a submitted HTTP method to one a webhook may use.
+	 *
+	 * Methods are case-sensitive on the wire, so the value is upper-cased
+	 * rather than run through sanitize_key(), which lower-cases it.
+	 *
+	 * @param mixed $method Submitted method.
+	 * @return string One of self::METHODS; POST for anything else.
+	 */
+	public static function sanitize_method( $method ): string {
+		$method = is_scalar( $method ) ? strtoupper( sanitize_text_field( (string) $method ) ) : '';
+
+		return in_array( $method, self::METHODS, true ) ? $method : 'POST';
+	}
+
+	/**
+	 * Parse the headers textarea ("Name: value" per line) into a header map.
+	 *
+	 * Header values are sent verbatim, so they are not run through the text
+	 * sanitizers, which would strip percent-encoded octets and anything that
+	 * looks like a tag from tokens and credentials. Instead a name must be an
+	 * RFC 9110 token, and control characters (CR and LF included, so no header
+	 * can be injected) are removed from the value.
+	 *
+	 * @param string $headers_text Unslashed textarea contents.
+	 * @return array<string, string>
+	 */
+	public static function parse_headers_text( string $headers_text ): array {
+		$headers = array();
+
+		foreach ( explode( "\n", $headers_text ) as $line ) {
+			$parts = explode( ':', $line, 2 );
+			if ( 2 !== count( $parts ) ) {
+				continue;
+			}
+
+			$name = trim( $parts[0] );
+			if ( '' === $name || ! preg_match( "/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/", $name ) ) {
+				continue;
+			}
+
+			$value = preg_replace( '/[\x00-\x1F\x7F]/', '', $parts[1] );
+			if ( ! is_string( $value ) || 1 !== preg_match( '//u', $value ) ) {
+				continue;
+			}
+
+			$headers[ $name ] = trim( $value );
+		}
+
+		return $headers;
+	}
+
+	/**
+	 * Apply the `dragonwebhookmanager_webhook_headers` filter to a webhook.
+	 *
+	 * Every path that sends a request (trigger, Test, Retry, add-on
+	 * re-delivery) goes through this, so filtered headers such as a request
+	 * signature are present on all of them.
+	 *
+	 * @param array  $webhook Webhook row; headers as stored (JSON).
+	 * @param string $payload Request body the headers will accompany.
+	 * @return array The webhook with its headers replaced by the filtered set.
+	 */
+	public static function with_filtered_headers( array $webhook, string $payload ): array {
+		$headers = json_decode( (string) ( $webhook['headers'] ?? '{}' ), true );
+		if ( ! is_array( $headers ) ) {
+			$headers = array();
+		}
+
+		/**
+		 * Filters the request headers for a delivery (for example to add a signature).
+		 *
+		 * @param array  $headers Header map.
+		 * @param array  $webhook Webhook row.
+		 * @param string $payload Request body.
+		 */
+		$headers = apply_filters( 'dragonwebhookmanager_webhook_headers', $headers, $webhook, $payload );
+		if ( ! is_array( $headers ) ) {
+			$headers = array();
+		}
+
+		$webhook['headers'] = wp_json_encode( $headers );
+
+		return $webhook;
+	}
+
+	/**
+	 * Add a JSON Content-Type unless the webhook sets one, in any letter case
+	 * (header names are case-insensitive).
+	 *
+	 * @param array $headers Request headers.
+	 * @return array
+	 */
+	public static function with_default_content_type( array $headers ): array {
+		foreach ( array_keys( $headers ) as $name ) {
+			if ( 0 === strcasecmp( (string) $name, 'Content-Type' ) ) {
+				return $headers;
+			}
+		}
+
+		$headers['Content-Type'] = 'application/json';
+		return $headers;
+	}
+
+	/**
 	 * Deliver webhook
 	 */
 	public function deliver( array $webhook, string $payload ): array {
@@ -225,10 +339,7 @@ class Webhook {
 			$headers = array();
 		}
 
-		// Ensure Content-Type is set
-		if ( ! isset( $headers['Content-Type'] ) ) {
-			$headers['Content-Type'] = 'application/json';
-		}
+		$headers = self::with_default_content_type( $headers );
 
 		$timeout = Plugin::sanitize_timeout( get_option( 'dragonwebhookmanager_default_timeout', 30 ) );
 
@@ -255,13 +366,13 @@ class Webhook {
 		$response = wp_remote_request(
 			$url,
 			array(
-				'method'             => $webhook['method'] ?? 'POST',
-				'headers'            => $headers,
-				'body'               => $payload,
-				'timeout'            => $timeout,
+				'method'              => $webhook['method'] ?? 'POST',
+				'headers'             => $headers,
+				'body'                => $payload,
+				'timeout'             => $timeout,
 				// Do not follow redirects: a 30x to an internal host would be
 				// re-resolved unpinned and reopen the SSRF hole.
-				'redirection'        => 0,
+				'redirection'         => 0,
 				// A misbehaving endpoint returning a huge body would otherwise be
 				// read into memory and stored per delivery; cap it.
 				'limit_response_size' => 64 * KB_IN_BYTES,
@@ -359,6 +470,32 @@ class Webhook {
 	}
 
 	/**
+	 * Whether a URL names an internal target without any DNS lookup.
+	 *
+	 * Catches localhost names and loopback, link-local, private or reserved IP
+	 * literals so they can be refused when a webhook is saved. A hostname is
+	 * not resolved here, since its records may change before delivery;
+	 * resolve_target() still checks every resolved address at send time.
+	 *
+	 * @param string $url Target URL.
+	 * @return bool True when the host is a localhost name or a blocked IP literal.
+	 */
+	public static function is_internal_literal( string $url ): bool {
+		$parsed = wp_parse_url( $url );
+		if ( ! $parsed || empty( $parsed['host'] ) ) {
+			return false;
+		}
+
+		$host = strtolower( trim( (string) $parsed['host'], '[]' ) );
+
+		if ( 'localhost' === $host || str_ends_with( $host, '.localhost' ) ) {
+			return true;
+		}
+
+		return filter_var( $host, FILTER_VALIDATE_IP ) && self::is_blocked_ip( $host );
+	}
+
+	/**
 	 * Resolve a webhook URL and decide whether it may be delivered.
 	 *
 	 * Resolves the host to every IPv4 and IPv6 address and blocks the request
@@ -446,7 +583,53 @@ class Webhook {
 	}
 
 	/**
+	 * IPv4 ranges that must never be a webhook target, as [network, prefix].
+	 *
+	 * Listed explicitly because filter_var()'s private/reserved flags miss some
+	 * (100.64.0.0/10 holds Alibaba Cloud's 100.100.100.200 metadata service)
+	 * and their coverage has changed between PHP versions.
+	 */
+	private const BLOCKED_V4 = array(
+		array( '0.0.0.0', 8 ),
+		array( '10.0.0.0', 8 ),
+		array( '100.64.0.0', 10 ),
+		array( '127.0.0.0', 8 ),
+		array( '169.254.0.0', 16 ),
+		array( '172.16.0.0', 12 ),
+		array( '192.0.0.0', 24 ),
+		array( '192.0.2.0', 24 ),
+		array( '192.88.99.0', 24 ),
+		array( '192.168.0.0', 16 ),
+		array( '198.18.0.0', 15 ),
+		array( '198.51.100.0', 24 ),
+		array( '203.0.113.0', 24 ),
+		array( '224.0.0.0', 4 ),
+		array( '240.0.0.0', 4 ),
+	);
+
+	/**
+	 * IPv6 ranges that must never be a webhook target, as [network, prefix].
+	 */
+	private const BLOCKED_V6 = array(
+		array( '::', 96 ),         // Unspecified, loopback, IPv4-compatible.
+		array( '64:ff9b:1::', 48 ), // Local-use NAT64.
+		array( '100::', 64 ),      // Discard.
+		array( '2001::', 23 ),     // IETF protocol assignments (incl. Teredo).
+		array( '2001:db8::', 32 ), // Documentation.
+		array( 'fc00::', 7 ),      // Unique local.
+		array( 'fe80::', 10 ),     // Link-local.
+		array( 'fec0::', 10 ),     // Site-local (deprecated).
+		array( 'ff00::', 8 ),      // Multicast.
+	);
+
+	/**
 	 * Whether an IP address is in a loopback, link-local, private, or reserved range.
+	 *
+	 * IPv6 forms that carry an IPv4 address (IPv4-mapped, NAT64 64:ff9b::/96
+	 * and 6to4 2002::/16) are judged by the embedded IPv4 address, so
+	 * 64:ff9b::a9fe:a9fe is blocked as 169.254.169.254 while the NAT64 form of
+	 * a public address (which a DNS64 resolver returns for every IPv4-only
+	 * host) is allowed.
 	 *
 	 * @param string $ip IPv4 or IPv6 address.
 	 * @return bool
@@ -456,6 +639,67 @@ class Webhook {
 			return true; // Not a valid IP: fail closed.
 		}
 
+		$packed = inet_pton( $ip );
+		if ( false === $packed ) {
+			return true;
+		}
+
+		if ( 4 === strlen( $packed ) ) {
+			foreach ( self::BLOCKED_V4 as list( $network, $prefix ) ) {
+				if ( self::in_prefix( $packed, (string) inet_pton( $network ), $prefix ) ) {
+					return true;
+				}
+			}
+
+			return ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+		}
+
+		// IPv6 carrying an IPv4 address: judge the embedded address.
+		$embedded = null;
+		if ( self::in_prefix( $packed, (string) inet_pton( '::ffff:0:0' ), 96 )
+			|| self::in_prefix( $packed, (string) inet_pton( '64:ff9b::' ), 96 ) ) {
+			$embedded = substr( $packed, 12, 4 );
+		} elseif ( self::in_prefix( $packed, (string) inet_pton( '2002::' ), 16 ) ) {
+			$embedded = substr( $packed, 2, 4 );
+		}
+		if ( null !== $embedded ) {
+			return self::is_blocked_ip( (string) inet_ntop( $embedded ) );
+		}
+
+		foreach ( self::BLOCKED_V6 as list( $network, $prefix ) ) {
+			if ( self::in_prefix( $packed, (string) inet_pton( $network ), $prefix ) ) {
+				return true;
+			}
+		}
+
 		return ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+	}
+
+	/**
+	 * Whether a packed address falls within a packed network of a prefix length.
+	 *
+	 * @param string $packed  Packed address (inet_pton).
+	 * @param string $network Packed network address of the same family.
+	 * @param int    $prefix  Prefix length in bits.
+	 * @return bool
+	 */
+	private static function in_prefix( string $packed, string $network, int $prefix ): bool {
+		if ( strlen( $packed ) !== strlen( $network ) ) {
+			return false;
+		}
+
+		$bytes = intdiv( $prefix, 8 );
+		if ( 0 !== strncmp( $packed, $network, $bytes ) ) {
+			return false;
+		}
+
+		$bits = $prefix % 8;
+		if ( 0 === $bits ) {
+			return true;
+		}
+
+		$mask = ( 0xFF << ( 8 - $bits ) ) & 0xFF;
+
+		return ( ord( $packed[ $bytes ] ) & $mask ) === ( ord( $network[ $bytes ] ) & $mask );
 	}
 }

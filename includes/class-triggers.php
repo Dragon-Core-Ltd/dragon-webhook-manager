@@ -138,6 +138,10 @@ class Triggers {
 			return;
 		}
 
+		if ( ! self::fires_for_post_type( $post->post_type, 'post_published' ) ) {
+			return;
+		}
+
 		$this->dispatch( 'post_published', array( 'post' => $post ) );
 	}
 
@@ -152,6 +156,10 @@ class Triggers {
 
 		// Only for published posts
 		if ( 'publish' !== $post_after->post_status ) {
+			return;
+		}
+
+		if ( ! self::fires_for_post_type( $post_after->post_type, 'post_updated' ) ) {
 			return;
 		}
 
@@ -170,11 +178,42 @@ class Triggers {
 	public function handle_post_trashed( int $post_id ): void {
 		$post = get_post( $post_id );
 
-		if ( ! $post ) {
+		if ( ! $post || ! self::fires_for_post_type( $post->post_type, 'post_trashed' ) ) {
 			return;
 		}
 
 		$this->dispatch( 'post_trashed', array( 'post' => $post ) );
+	}
+
+	/**
+	 * Whether posts of a type fire the post triggers.
+	 *
+	 * By default only viewable types do, so internal records WordPress keeps
+	 * as posts (oEmbed caches, templates, global styles, navigation menus)
+	 * never reach a webhook.
+	 *
+	 * @param string $post_type     Post type name.
+	 * @param string $trigger_event post_published, post_updated or post_trashed.
+	 * @return bool
+	 */
+	public static function fires_for_post_type( string $post_type, string $trigger_event ): bool {
+		$viewable = array_values( array_filter( get_post_types(), 'is_post_type_viewable' ) );
+
+		/**
+		 * Filters the post types whose posts fire the post triggers.
+		 *
+		 * Add a type to send webhooks for a non-public custom post type, or
+		 * remove one to silence it.
+		 *
+		 * @param string[] $post_types    Post type names. Default: viewable types.
+		 * @param string   $trigger_event post_published, post_updated or post_trashed.
+		 */
+		$post_types = apply_filters( 'dragonwebhookmanager_post_types', $viewable, $trigger_event );
+		if ( ! is_array( $post_types ) ) {
+			$post_types = $viewable;
+		}
+
+		return in_array( $post_type, $post_types, true );
 	}
 
 	/**
@@ -242,16 +281,10 @@ class Triggers {
 		}
 
 		// Parse payload template
-		$payload = $this->payload->parse( $webhook['payload_template'] ?? '{}', $context );
+		$payload = $this->payload->parse( $webhook['payload_template'] ?? '{}', $context, (string) ( $webhook['trigger_event'] ?? '' ) );
 
 		// Filterable request headers (for example to add a signature).
-		$webhook_headers = json_decode( $webhook['headers'] ?? '{}', true );
-		if ( ! is_array( $webhook_headers ) ) {
-			$webhook_headers = array();
-		}
-
-		$webhook_headers    = apply_filters( 'dragonwebhookmanager_webhook_headers', $webhook_headers, $webhook, $payload );
-		$webhook['headers'] = wp_json_encode( $webhook_headers );
+		$webhook = Webhook::with_filtered_headers( $webhook, $payload );
 
 		// Start log
 		$log_id = $this->logger->log_start( $webhook, $payload );

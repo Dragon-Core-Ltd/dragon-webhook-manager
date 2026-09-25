@@ -43,6 +43,13 @@ class Integration {
 	private Logger $logger;
 
 	/**
+	 * Last request sent per webhook ID by deliver_webhook(), as [webhook, payload].
+	 *
+	 * @var array<int, array>
+	 */
+	private array $sent = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Webhook $webhook Webhook model.
@@ -92,16 +99,13 @@ class Integration {
 			return $result;
 		}
 
-		$payload = $this->payload->parse( (string) ( $webhook['payload_template'] ?? '{}' ), (array) $context );
+		$payload = $this->payload->parse( (string) ( $webhook['payload_template'] ?? '{}' ), (array) $context, (string) ( $webhook['trigger_event'] ?? '' ) );
 
-		$headers = json_decode( $webhook['headers'] ?? '{}', true );
-		if ( ! is_array( $headers ) ) {
-			$headers = array();
-		}
+		$webhook = Webhook::with_filtered_headers( (array) $webhook, $payload );
 
-		/** This filter is documented in includes/class-triggers.php */
-		$headers            = apply_filters( 'dragonwebhookmanager_webhook_headers', $headers, $webhook, $payload );
-		$webhook['headers'] = wp_json_encode( $headers );
+		// Kept for update_log(), which records what was sent on the log row
+		// the caller opened through create_log() before this delivery.
+		$this->sent[ (int) ( $webhook['id'] ?? 0 ) ] = array( $webhook, $payload );
 
 		return $this->webhook->deliver( $webhook, $payload );
 	}
@@ -118,7 +122,21 @@ class Integration {
 			return $value;
 		}
 
-		return $this->logger->create( (array) $data );
+		$data = (array) $data;
+
+		// Record where the request goes, so the row reads like one the free
+		// plugin opened itself. The body and final headers are added by
+		// update_log() once the delivery has been made.
+		$webhook = empty( $data['webhook_id'] ) ? null : $this->webhook->get( (int) $data['webhook_id'] );
+		if ( is_array( $webhook ) ) {
+			$data += array(
+				'request_url'     => (string) ( $webhook['url'] ?? '' ),
+				'request_method'  => (string) ( $webhook['method'] ?? '' ),
+				'request_headers' => (string) ( $webhook['headers'] ?? '' ),
+			);
+		}
+
+		return $this->logger->create( $data );
 	}
 
 	/**
@@ -128,10 +146,23 @@ class Integration {
 	 * @param array $data   Outcome data.
 	 */
 	public function update_log( $log_id, $data ): void {
-		$data = (array) $data;
+		$data   = (array) $data;
+		$log_id = (int) $log_id;
+
+		// Fill in the request deliver_webhook() sent for this row's webhook,
+		// when the row does not hold one yet.
+		$log = $log_id ? $this->logger->get( $log_id ) : null;
+		if ( is_array( $log ) && null === ( $log['request_body'] ?? null ) ) {
+			$webhook_id = (int) ( $log['webhook_id'] ?? 0 );
+			if ( isset( $this->sent[ $webhook_id ] ) ) {
+				list( $sent_webhook, $payload ) = $this->sent[ $webhook_id ];
+				unset( $this->sent[ $webhook_id ] );
+				$this->logger->fill_request( $log_id, $sent_webhook, $payload );
+			}
+		}
 
 		$this->logger->log_complete(
-			(int) $log_id,
+			$log_id,
 			(string) ( $data['status'] ?? 'failed' ),
 			(int) ( $data['response_code'] ?? 0 ),
 			(string) ( $data['response_body'] ?? '' ),

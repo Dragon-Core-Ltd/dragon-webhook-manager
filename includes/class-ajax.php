@@ -44,8 +44,9 @@ class Ajax {
 			'description'      => sanitize_textarea_field( wp_unslash( $_POST['description'] ?? '' ) ),
 			'trigger_event'    => sanitize_key( $_POST['trigger_event'] ?? '' ),
 			'url'              => esc_url_raw( wp_unslash( $_POST['url'] ?? '' ) ),
-			'method'           => sanitize_key( $_POST['method'] ?? 'POST' ),
-			'headers'          => $this->parse_headers( sanitize_textarea_field( wp_unslash( $_POST['headers'] ?? '' ) ) ),
+			'method'           => Webhook::sanitize_method( wp_unslash( $_POST['method'] ?? 'POST' ) ),
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- parse_headers_text() validates names as tokens and strips control characters from values; the text sanitizers would corrupt credentials.
+			'headers'          => Webhook::parse_headers_text( (string) wp_unslash( $_POST['headers'] ?? '' ) ),
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw JSON template; stored for machine use and escaped on output.
 			'payload_template' => wp_unslash( $_POST['payload_template'] ?? '' ),
 			'is_active'        => isset( $_POST['is_active'] ) ? 1 : 0,
@@ -62,6 +63,11 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'Invalid URL format.', 'dragon-webhook-manager' ) ) );
 		}
 		$data['url'] = $normalized_url;
+
+		// Refuse internal addresses at save; delivery re-checks resolved DNS.
+		if ( (bool) apply_filters( 'dragonwebhookmanager_is_internal_url', Webhook::is_internal_literal( $normalized_url ), $normalized_url ) ) {
+			wp_send_json_error( array( 'message' => __( 'Requests to internal or private IP addresses are not allowed.', 'dragon-webhook-manager' ) ) );
+		}
 
 		if ( $id ) {
 			$result = $this->webhook->update( $id, $data );
@@ -169,11 +175,13 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
 		}
 
-		$id = isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0;
+		$id    = isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0;
+		$saved = $id ? $this->webhook->get( $id ) : null;
 
-		$webhook = $id ? $this->webhook->get( $id ) : null;
-
-		if ( ! $webhook ) {
+		// The edit form posts its fields with the test, so what is tested is
+		// what is on screen, saved or not. A saved webhook keeps its identity
+		// (ID, name) so add-ons such as request signing still apply.
+		if ( ! $saved || isset( $_POST['url'] ) ) {
 			// normalize_url() returns null for a URL it refuses. Keep the raw input
 			// so a refused URL is reported as invalid rather than as missing: the
 			// user did supply one.
@@ -184,19 +192,27 @@ class Ajax {
 				wp_send_json_error( array( 'message' => __( 'That URL could not be used. Enter a full https:// address.', 'dragon-webhook-manager' ) ) );
 			}
 
-			$normalized_url = (string) $normalized_url;
-
-			// Test with form data
-			$webhook = array(
-				'id'               => 0,
-				'name'             => 'Test',
-				'trigger_event'    => sanitize_key( $_POST['trigger_event'] ?? 'post_published' ),
-				'url'              => $normalized_url,
-				'method'           => sanitize_key( $_POST['method'] ?? 'POST' ),
-				'headers'          => wp_json_encode( $this->parse_headers( sanitize_textarea_field( wp_unslash( $_POST['headers'] ?? '' ) ) ) ),
+			$form = array(
+				'trigger_event'    => sanitize_key( $_POST['trigger_event'] ?? ( $saved['trigger_event'] ?? 'post_published' ) ),
+				'url'              => (string) $normalized_url,
+				'method'           => Webhook::sanitize_method( wp_unslash( $_POST['method'] ?? 'POST' ) ),
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- parse_headers_text() validates names as tokens and strips control characters from values; the text sanitizers would corrupt credentials.
+				'headers'          => wp_json_encode( Webhook::parse_headers_text( (string) wp_unslash( $_POST['headers'] ?? '' ) ) ),
 				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw JSON template; stored for machine use and escaped on output.
 				'payload_template' => wp_unslash( $_POST['payload_template'] ?? '{}' ),
 			);
+
+			$webhook = $saved
+				? array_merge( $saved, $form )
+				: array_merge(
+					array(
+						'id'   => 0,
+						'name' => 'Test',
+					),
+					$form
+				);
+		} else {
+			$webhook = $saved;
 		}
 
 		if ( empty( $webhook['url'] ) ) {
@@ -207,10 +223,10 @@ class Ajax {
 		$context = Payload::sample_context( (string) $webhook['trigger_event'] );
 
 		// Parse payload
-		$payload = $this->payload->parse( $webhook['payload_template'], $context );
+		$payload = $this->payload->parse( $webhook['payload_template'], $context, (string) $webhook['trigger_event'] );
 
-		// Deliver
-		$result = $this->webhook->deliver( $webhook, $payload );
+		// Deliver with the same filtered headers a triggered delivery gets.
+		$result = $this->webhook->deliver( Webhook::with_filtered_headers( $webhook, $payload ), $payload );
 
 		if ( $result['success'] ) {
 			wp_send_json_success(
@@ -259,11 +275,20 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'Webhook not found.', 'dragon-webhook-manager' ) ) );
 		}
 
-		// Re-deliver with original payload
-		$result = $this->webhook->deliver( $webhook, $log['request_body'] );
+		// Rows opened by an add-on before this version recorded no request, so
+		// there is nothing to resend.
+		if ( ! is_string( $log['request_body'] ?? null ) ) {
+			wp_send_json_error( array( 'message' => __( 'This log entry has no stored request, so it cannot be resent. Use Test on the webhook instead.', 'dragon-webhook-manager' ) ) );
+		}
+
+		// Re-deliver the original payload with freshly filtered headers (a
+		// signature covers this body and a current timestamp).
+		$payload = $log['request_body'];
+		$webhook = Webhook::with_filtered_headers( $webhook, $payload );
+		$result  = $this->webhook->deliver( $webhook, $payload );
 
 		// Log the retry
-		$new_log_id = $this->logger->log_start( $webhook, $log['request_body'] );
+		$new_log_id = $this->logger->log_start( $webhook, $payload );
 		$this->logger->log_complete(
 			$new_log_id,
 			$result['success'] ? 'success' : 'failed',
@@ -300,32 +325,17 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'dragon-webhook-manager' ) ) );
 		}
 
-		$this->logger->clear_logs();
-
-		wp_send_json_success( array( 'message' => __( 'Logs cleared.', 'dragon-webhook-manager' ) ) );
-	}
-
-	/**
-	 * Parse headers from textarea format
-	 */
-	private function parse_headers( string $headers_text ): array {
-		$headers = array();
-		$lines   = explode( "\n", $headers_text );
-
-		foreach ( $lines as $line ) {
-			$line = trim( $line );
-			if ( empty( $line ) ) {
-				continue;
-			}
-
-			$parts = explode( ':', $line, 2 );
-			if ( count( $parts ) === 2 ) {
-				$key             = trim( $parts[0] );
-				$value           = trim( $parts[1] );
-				$headers[ $key ] = $value;
-			}
+		if ( ! $this->logger->clear_logs() ) {
+			wp_send_json_error( array( 'message' => __( 'The logs could not be cleared. Check the database error log.', 'dragon-webhook-manager' ) ) );
 		}
 
-		return $headers;
+		/**
+		 * Fires after every delivery log row was deleted from the logs screen.
+		 *
+		 * Add-ons that keep state keyed by log ID drop it here.
+		 */
+		do_action( 'dragonwebhookmanager_logs_cleared' );
+
+		wp_send_json_success( array( 'message' => __( 'Logs cleared.', 'dragon-webhook-manager' ) ) );
 	}
 }

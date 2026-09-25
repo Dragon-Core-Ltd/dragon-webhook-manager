@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-24T17:38:10+00:00\n"
+"POT-Creation-Date: 2026-09-25T00:31:29+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: dragon-webhook-manager\n"
@@ -173,8 +173,8 @@ msgid "Edit Webhook"
 msgstr ""
 
 #: admin/views/edit.php:38
-#: includes/class-triggers.php:310
-#: includes/class-triggers.php:338
+#: includes/class-triggers.php:343
+#: includes/class-triggers.php:371
 msgid "Other"
 msgstr ""
 
@@ -441,17 +441,17 @@ msgid "Are you sure you want to clear all logs?"
 msgstr ""
 
 #: includes/class-admin.php:114
-#: includes/class-ajax.php:96
+#: includes/class-ajax.php:102
 msgid "Webhook saved successfully."
 msgstr ""
 
 #: includes/class-admin.php:115
-#: includes/class-ajax.php:127
+#: includes/class-ajax.php:133
 msgid "Webhook deleted."
 msgstr ""
 
 #: includes/class-admin.php:116
-#: includes/class-ajax.php:156
+#: includes/class-ajax.php:162
 msgid "Webhook status updated."
 msgstr ""
 
@@ -460,7 +460,7 @@ msgid "Test webhook sent."
 msgstr ""
 
 #: includes/class-admin.php:118
-#: includes/class-ajax.php:305
+#: includes/class-ajax.php:339
 msgid "Logs cleared."
 msgstr ""
 
@@ -523,212 +523,229 @@ msgid "Pending"
 msgstr ""
 
 #: includes/class-ajax.php:38
-#: includes/class-ajax.php:109
-#: includes/class-ajax.php:137
-#: includes/class-ajax.php:169
-#: includes/class-ajax.php:245
-#: includes/class-ajax.php:300
+#: includes/class-ajax.php:115
+#: includes/class-ajax.php:143
+#: includes/class-ajax.php:175
+#: includes/class-ajax.php:261
+#: includes/class-ajax.php:325
 msgid "Permission denied."
 msgstr ""
 
-#: includes/class-ajax.php:56
+#: includes/class-ajax.php:57
 msgid "Name, trigger, and URL are required."
 msgstr ""
 
-#: includes/class-ajax.php:62
+#: includes/class-ajax.php:63
 msgid "Invalid URL format."
 msgstr ""
 
-#: includes/class-ajax.php:74
+#: includes/class-ajax.php:69
+#: includes/class-webhook.php:333
+msgid "Requests to internal or private IP addresses are not allowed."
+msgstr ""
+
+#: includes/class-ajax.php:80
 msgid "Failed to update webhook."
 msgstr ""
 
-#: includes/class-ajax.php:75
+#: includes/class-ajax.php:81
 msgid "Failed to create webhook."
 msgstr ""
 
-#: includes/class-ajax.php:115
-#: includes/class-ajax.php:143
+#: includes/class-ajax.php:121
+#: includes/class-ajax.php:149
 msgid "Invalid webhook ID."
 msgstr ""
 
-#: includes/class-ajax.php:124
+#: includes/class-ajax.php:130
 msgid "Failed to delete webhook."
 msgstr ""
 
-#: includes/class-ajax.php:149
+#: includes/class-ajax.php:155
 msgid "Failed to toggle webhook."
 msgstr ""
 
-#: includes/class-ajax.php:184
+#: includes/class-ajax.php:192
 msgid "That URL could not be used. Enter a full https:// address."
 msgstr ""
 
-#: includes/class-ajax.php:203
+#: includes/class-ajax.php:219
 msgid "URL is required."
 msgstr ""
 
-#: includes/class-ajax.php:218
+#: includes/class-ajax.php:234
 msgid "Test webhook sent successfully!"
 msgstr ""
 
-#: includes/class-ajax.php:228
+#: includes/class-ajax.php:244
 msgid "Webhook delivery failed."
 msgstr ""
 
-#: includes/class-ajax.php:253
+#: includes/class-ajax.php:269
 msgid "Log not found."
 msgstr ""
 
-#: includes/class-ajax.php:259
+#: includes/class-ajax.php:275
 msgid "Webhook not found."
 msgstr ""
 
-#: includes/class-ajax.php:279
+#: includes/class-ajax.php:281
+msgid "This log entry has no stored request, so it cannot be resent. Use Test on the webhook instead."
+msgstr ""
+
+#: includes/class-ajax.php:304
 msgid "Retry successful!"
 msgstr ""
 
-#: includes/class-ajax.php:286
+#: includes/class-ajax.php:311
 msgid "Retry failed."
 msgstr ""
 
-#: includes/class-payload.php:193
-msgid "Global"
-msgstr ""
-
-#: includes/class-payload.php:194
-msgid "Site URL"
-msgstr ""
-
-#: includes/class-payload.php:195
-msgid "Site name"
-msgstr ""
-
-#: includes/class-payload.php:196
-msgid "Admin email"
-msgstr ""
-
-#: includes/class-payload.php:197
-msgid "Unix timestamp"
-msgstr ""
-
-#: includes/class-payload.php:198
-msgid "ISO 8601 timestamp"
-msgstr ""
-
-#: includes/class-payload.php:200
-msgid "Post"
-msgstr ""
-
-#: includes/class-payload.php:201
-msgid "Post ID"
-msgstr ""
-
-#: includes/class-payload.php:202
-#: includes/class-payload.php:223
-msgid "Post title"
-msgstr ""
-
-#: includes/class-payload.php:203
-msgid "Post content"
-msgstr ""
-
-#: includes/class-payload.php:204
-msgid "Post excerpt"
-msgstr ""
-
-#: includes/class-payload.php:205
-#: includes/class-payload.php:224
-msgid "Post URL"
+#: includes/class-ajax.php:329
+msgid "The logs could not be cleared. Check the database error log."
 msgstr ""
 
 #: includes/class-payload.php:206
-msgid "Post type"
+msgid "Global"
 msgstr ""
 
 #: includes/class-payload.php:207
-msgid "Post status"
+msgid "Site URL"
 msgstr ""
 
 #: includes/class-payload.php:208
-#: includes/class-payload.php:220
-msgid "Author name"
+msgid "Site name"
 msgstr ""
 
 #: includes/class-payload.php:209
-#: includes/class-payload.php:221
-msgid "Author email"
+msgid "Admin email"
+msgstr ""
+
+#: includes/class-payload.php:210
+msgid "Unix timestamp"
 msgstr ""
 
 #: includes/class-payload.php:211
-#: includes/class-payload.php:303
+msgid "ISO 8601 timestamp"
+msgstr ""
+
+#: includes/class-payload.php:212
+msgid "Trigger key being delivered, such as post_published"
+msgstr ""
+
+#: includes/class-payload.php:214
+msgid "Post"
+msgstr ""
+
+#: includes/class-payload.php:215
+msgid "Post ID"
+msgstr ""
+
+#: includes/class-payload.php:216
+#: includes/class-payload.php:237
+msgid "Post title"
+msgstr ""
+
+#: includes/class-payload.php:217
+msgid "Post content"
+msgstr ""
+
+#: includes/class-payload.php:218
+msgid "Post excerpt"
+msgstr ""
+
+#: includes/class-payload.php:219
+#: includes/class-payload.php:238
+msgid "Post URL"
+msgstr ""
+
+#: includes/class-payload.php:220
+msgid "Post type"
+msgstr ""
+
+#: includes/class-payload.php:221
+msgid "Post status"
+msgstr ""
+
+#: includes/class-payload.php:222
+#: includes/class-payload.php:234
+msgid "Author name"
+msgstr ""
+
+#: includes/class-payload.php:223
+#: includes/class-payload.php:235
+msgid "Author email"
+msgstr ""
+
+#: includes/class-payload.php:225
+#: includes/class-payload.php:316
 #: includes/class-triggers.php:77
 msgid "User"
 msgstr ""
 
-#: includes/class-payload.php:212
+#: includes/class-payload.php:226
 msgid "User ID"
 msgstr ""
 
-#: includes/class-payload.php:213
+#: includes/class-payload.php:227
 msgid "User email"
 msgstr ""
 
-#: includes/class-payload.php:214
+#: includes/class-payload.php:228
 msgid "Username"
 msgstr ""
 
-#: includes/class-payload.php:215
+#: includes/class-payload.php:229
 msgid "Display name"
 msgstr ""
 
-#: includes/class-payload.php:216
+#: includes/class-payload.php:230
 msgid "User roles"
 msgstr ""
 
-#: includes/class-payload.php:218
+#: includes/class-payload.php:232
 #: includes/class-triggers.php:78
 msgid "Comment"
 msgstr ""
 
-#: includes/class-payload.php:219
+#: includes/class-payload.php:233
 msgid "Comment ID"
 msgstr ""
 
-#: includes/class-payload.php:222
+#: includes/class-payload.php:236
 msgid "Comment content"
 msgstr ""
 
-#: includes/class-payload.php:281
+#: includes/class-payload.php:296
 msgid "Sample Post Title"
 msgstr ""
 
-#: includes/class-payload.php:282
+#: includes/class-payload.php:297
 msgid "This is sample post content for testing webhooks."
 msgstr ""
 
-#: includes/class-payload.php:283
+#: includes/class-payload.php:298
 msgid "Sample excerpt"
 msgstr ""
 
-#: includes/class-payload.php:301
+#: includes/class-payload.php:314
 msgid "Test User"
 msgstr ""
 
-#: includes/class-payload.php:302
+#: includes/class-payload.php:315
 msgid "Test"
 msgstr ""
 
-#: includes/class-payload.php:316
+#: includes/class-payload.php:327
 msgid "Commenter Name"
 msgstr ""
 
-#: includes/class-payload.php:319
+#: includes/class-payload.php:330
 msgid "This is a sample comment."
 msgstr ""
 
 #. translators: 1: list of table names, 2: human-readable time since the last attempt.
-#: includes/class-plugin.php:145
+#: includes/class-plugin.php:169
 msgid "Dragon Webhook Manager could not create its database table: %1$s. The last attempt was %2$s ago; it retries every 10 minutes. Check that the database user has CREATE permission."
 msgid_plural "Dragon Webhook Manager could not create its database tables: %1$s. The last attempt was %2$s ago; it retries every 10 minutes. Check that the database user has CREATE permission."
 msgstr[0] ""
@@ -802,16 +819,12 @@ msgstr ""
 msgid "Content"
 msgstr ""
 
-#: includes/class-webhook.php:219
-msgid "Requests to internal or private IP addresses are not allowed."
-msgstr ""
-
 #. translators: %d: HTTP status code.
-#: includes/class-webhook.php:301
+#: includes/class-webhook.php:412
 msgid "HTTP %d: the endpoint redirected, and redirects are not followed. Use the final URL directly."
 msgstr ""
 
 #. translators: %d: HTTP status code.
-#: includes/class-webhook.php:307
+#: includes/class-webhook.php:418
 msgid "HTTP %d: the endpoint returned an error status."
 msgstr ""

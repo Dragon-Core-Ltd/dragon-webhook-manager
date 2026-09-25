@@ -26,6 +26,11 @@ class Plugin {
 	 */
 	private const SCHEMA_RETRY_DELAY = 10 * MINUTE_IN_SECONDS;
 
+	/**
+	 * Autoloaded marker set once the pre-1.0.4 dwm_ options are gone.
+	 */
+	private const LEGACY_MIGRATED_OPTION = 'dragonwebhookmanager_legacy_migrated';
+
 	private static ?Plugin $instance = null;
 
 	private Webhook $webhook;
@@ -60,8 +65,17 @@ class Plugin {
 	 * configured webhooks and delivery history are untouched.
 	 */
 	private static function migrate_legacy_prefix(): void {
+		// Runs on every request until a pass finds nothing legacy left, then
+		// never again. The marker is autoloaded; the legacy names are not, and
+		// without it each lookup of a missing one would be a query per request.
+		if ( get_option( self::LEGACY_MIGRATED_OPTION ) ) {
+			return;
+		}
+
 		// db_version is a schema marker managed by activation, not user data.
-		delete_option( 'dwm_db_version' );
+		if ( false !== get_option( 'dwm_db_version' ) ) {
+			delete_option( 'dwm_db_version' );
+		}
 
 		$options = array( 'default_timeout', 'log_retention_days' );
 
@@ -85,6 +99,16 @@ class Plugin {
 		if ( $legacy_cron ) {
 			wp_unschedule_event( $legacy_cron, 'dwm_cleanup_logs' );
 		}
+
+		// Mark done only once a read-back finds every legacy item gone, so a
+		// failed copy or unschedule is retried on the next request.
+		$done = false === get_option( 'dwm_db_version' ) && ! wp_next_scheduled( 'dwm_cleanup_logs' );
+		foreach ( $options as $name ) {
+			$done = $done && null === get_option( 'dwm_' . $name, null );
+		}
+		if ( $done ) {
+			update_option( self::LEGACY_MIGRATED_OPTION, 1, true );
+		}
 	}
 
 	/**
@@ -103,8 +127,8 @@ class Plugin {
 		$this->logger   = new Logger();
 		$this->triggers = new Triggers( $this->webhook, $this->payload, $this->logger );
 		$this->admin    = new Admin( $this->webhook, $this->logger );
-		( new Pro_Pointer() )->init_hooks();
 		$this->ajax     = new Ajax( $this->webhook, $this->logger, $this->payload );
+		( new Pro_Pointer() )->init_hooks();
 
 		// Integration hook API for add-ons (re-delivery and logging).
 		$this->integration = new Integration( $this->webhook, $this->payload, $this->logger );

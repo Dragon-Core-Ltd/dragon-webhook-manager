@@ -12,11 +12,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Payload {
 
 	/**
-	 * Parse template variables in payload
+	 * Parse template variables in payload.
+	 *
+	 * @param string $template      Payload template.
+	 * @param array  $context       Trigger context.
+	 * @param string $trigger_event Trigger key being delivered, for {{trigger_event}}.
+	 * @return string
 	 */
-	public function parse( string $template, array $context = array() ): string {
+	public function parse( string $template, array $context = array(), string $trigger_event = '' ): string {
 		// Get all available variables
-		$variables = $this->get_variables( $context );
+		$variables = $this->get_variables( $context, $trigger_event );
 
 		// Replace double-brace template placeholders. Values are JSON-escaped so
 		// that user-controlled content — a comment body or author name, which an
@@ -90,10 +95,14 @@ class Payload {
 	}
 
 	/**
-	 * Get all available variables for context
+	 * Get all available variables for context.
+	 *
+	 * @param array  $context       Trigger context.
+	 * @param string $trigger_event Trigger key being delivered; empty when the caller has none.
+	 * @return array
 	 */
-	public function get_variables( array $context = array() ): array {
-		$variables = $this->get_global_variables();
+	public function get_variables( array $context = array(), string $trigger_event = '' ): array {
+		$variables = $this->get_global_variables( $trigger_event );
 
 		if ( isset( $context['post'] ) && $context['post'] instanceof \WP_Post ) {
 			$variables = array_merge( $variables, $this->get_post_variables( $context['post'] ) );
@@ -111,15 +120,19 @@ class Payload {
 	}
 
 	/**
-	 * Global variables
+	 * Global variables.
+	 *
+	 * @param string $trigger_event Trigger key being delivered.
+	 * @return array
 	 */
-	private function get_global_variables(): array {
+	private function get_global_variables( string $trigger_event ): array {
 		return array(
 			'site_url'      => home_url(),
 			'site_name'     => get_bloginfo( 'name' ),
 			'admin_email'   => get_option( 'admin_email' ),
 			'timestamp'     => time(),
 			'timestamp_iso' => gmdate( 'c' ),
+			'trigger_event' => $trigger_event,
 		);
 	}
 
@@ -196,6 +209,7 @@ class Payload {
 				'{{admin_email}}'   => __( 'Admin email', 'dragon-webhook-manager' ),
 				'{{timestamp}}'     => __( 'Unix timestamp', 'dragon-webhook-manager' ),
 				'{{timestamp_iso}}' => __( 'ISO 8601 timestamp', 'dragon-webhook-manager' ),
+				'{{trigger_event}}' => __( 'Trigger key being delivered, such as post_published', 'dragon-webhook-manager' ),
 			),
 			__( 'Post', 'dragon-webhook-manager' )    => array(
 				'{{post_id}}'           => __( 'Post ID', 'dragon-webhook-manager' ),
@@ -270,10 +284,11 @@ class Payload {
 	 * @return array Context in the shape the trigger itself dispatches.
 	 */
 	public static function sample_context( string $trigger_event ): array {
-		$now = current_time( 'mysql' );
+		$now     = current_time( 'mysql' );
+		$context = array();
 
 		if ( in_array( $trigger_event, array( 'post_published', 'post_updated', 'post_trashed' ), true ) ) {
-			return array(
+			$context = array(
 				'post' => new \WP_Post(
 					(object) array(
 						'ID'            => 123,
@@ -289,9 +304,7 @@ class Payload {
 					)
 				),
 			);
-		}
-
-		if ( in_array( $trigger_event, array( 'user_registered', 'user_login' ), true ) ) {
+		} elseif ( in_array( $trigger_event, array( 'user_registered', 'user_login' ), true ) ) {
 			// Built empty and filled field by field: constructing a WP_User from
 			// an ID would load that account's capabilities from the database.
 			$user                  = new \WP_User();
@@ -304,11 +317,9 @@ class Payload {
 			$user->user_registered = $now;
 			$user->roles           = array( 'subscriber' );
 
-			return array( 'user' => $user );
-		}
-
-		if ( in_array( $trigger_event, array( 'comment_submitted', 'comment_approved' ), true ) ) {
-			return array(
+			$context = array( 'user' => $user );
+		} elseif ( in_array( $trigger_event, array( 'comment_submitted', 'comment_approved' ), true ) ) {
+			$context = array(
 				'comment' => new \WP_Comment(
 					(object) array(
 						'comment_ID'           => '456',
@@ -324,6 +335,19 @@ class Payload {
 			);
 		}
 
-		return array();
+		/**
+		 * Filters the sample context used for a test delivery.
+		 *
+		 * Add-ons that register their own triggers return sample data in the
+		 * shape their trigger dispatches, so a test send fills their
+		 * placeholders. Sample data must never be read from, or written to, the
+		 * site's real records.
+		 *
+		 * @param array  $context       Sample context; empty for triggers this plugin does not own.
+		 * @param string $trigger_event Trigger key being tested.
+		 */
+		$filtered = apply_filters( 'dragonwebhookmanager_sample_context', $context, $trigger_event );
+
+		return is_array( $filtered ) ? $filtered : $context;
 	}
 }

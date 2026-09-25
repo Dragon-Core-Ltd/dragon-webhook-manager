@@ -120,6 +120,7 @@ if ( ! function_exists( 'update_option' ) ) {
 
 if ( ! function_exists( 'delete_option' ) ) {
 	function delete_option( $name ) {
+		$GLOBALS['dragonwebhookmanager_test_deleted_options'][] = $name;
 		$existed = array_key_exists( $name, $GLOBALS['dragonwebhookmanager_test_options'] );
 		unset( $GLOBALS['dragonwebhookmanager_test_options'][ $name ] );
 		return $existed;
@@ -235,10 +236,174 @@ if ( ! function_exists( 'dbDelta' ) ) {
 	}
 }
 
+$GLOBALS['dragonwebhookmanager_test_actions']         = array();
+$GLOBALS['dragonwebhookmanager_test_deleted_options'] = array();
+
+if ( ! class_exists( 'Dragon_Test_Json_Response' ) ) {
+	/**
+	 * Thrown by the wp_send_json_* stubs: core ends the request there, so a
+	 * handler must never carry on past one.
+	 */
+	class Dragon_Test_Json_Response extends Exception {
+		public bool $success;
+		public $data;
+
+		public function __construct( bool $success, $data ) {
+			parent::__construct( $success ? 'success' : 'error' );
+			$this->success = $success;
+			$this->data    = $data;
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_send_json_success' ) ) {
+	function wp_send_json_success( $data = null, $status_code = null, $flags = 0 ) {
+		unset( $status_code, $flags );
+		throw new Dragon_Test_Json_Response( true, $data );
+	}
+}
+
+if ( ! function_exists( 'wp_send_json_error' ) ) {
+	function wp_send_json_error( $data = null, $status_code = null, $flags = 0 ) {
+		unset( $status_code, $flags );
+		throw new Dragon_Test_Json_Response( false, $data );
+	}
+}
+
+if ( ! function_exists( 'check_ajax_referer' ) ) {
+	function check_ajax_referer( $action = -1, $query_arg = false, $stop = true ) {
+		unset( $action, $query_arg, $stop );
+		return 1;
+	}
+}
+
+if ( ! function_exists( 'do_action' ) ) {
+	// Records fired actions (no listeners run: add_action is a no-op here).
+	function do_action( $hook_name, ...$args ) {
+		$GLOBALS['dragonwebhookmanager_test_actions'][] = array_merge( array( $hook_name ), $args );
+	}
+}
+
+if ( ! function_exists( 'wp_unslash' ) ) {
+	function wp_unslash( $value ) {
+		return is_array( $value ) ? array_map( 'wp_unslash', $value ) : ( is_string( $value ) ? stripslashes( $value ) : $value );
+	}
+}
+
+if ( ! function_exists( 'wp_slash' ) ) {
+	// As core: strings are addslashes()'d, arrays walked, anything else kept.
+	function wp_slash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_slash', $value );
+		}
+		return is_string( $value ) ? addslashes( $value ) : $value;
+	}
+}
+
+if ( ! function_exists( 'absint' ) ) {
+	function absint( $maybeint ) {
+		return abs( (int) $maybeint );
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	// Mirrors core: lowercases, then keeps only a-z, 0-9, underscore and dash.
+	function sanitize_key( $key ) {
+		if ( ! is_scalar( $key ) ) {
+			return '';
+		}
+		return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $key ) );
+	}
+}
+
+if ( ! function_exists( 'dragon_test_sanitize_text' ) ) {
+	// Mirrors core _sanitize_text_fields(): strips tags, drops percent-encoded
+	// octets, folds whitespace (keeping newlines for textareas) and trims.
+	function dragon_test_sanitize_text( $str, $keep_newlines ) {
+		if ( is_object( $str ) || is_array( $str ) ) {
+			return '';
+		}
+		$str = (string) $str;
+		if ( 1 !== preg_match( '//u', $str ) ) {
+			return '';
+		}
+		if ( str_contains( $str, '<' ) ) {
+			$str = preg_replace_callback(
+				'%<[^>]*?((?=<)|>|$)%',
+				static function ( $m ) {
+					return str_contains( $m[0], '>' ) ? $m[0] : str_replace( '<', '&lt;', $m[0] );
+				},
+				$str
+			);
+			$str = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', $str );
+			$str = strip_tags( $str );
+			$str = str_replace( "<\n", "&lt;\n", $str );
+		}
+		if ( ! $keep_newlines ) {
+			$str = preg_replace( '/[\r\n\t ]+/', ' ', $str );
+		}
+		$str   = trim( $str );
+		$found = false;
+		while ( preg_match( '/%[a-f0-9]{2}/i', $str, $match ) ) {
+			$str   = str_replace( $match[0], '', $str );
+			$found = true;
+		}
+		if ( $found ) {
+			$str = trim( preg_replace( '/ +/', ' ', $str ) );
+		}
+		return $str;
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( $str ) {
+		return dragon_test_sanitize_text( $str, false );
+	}
+}
+
+if ( ! function_exists( 'sanitize_textarea_field' ) ) {
+	function sanitize_textarea_field( $str ) {
+		return dragon_test_sanitize_text( $str, true );
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	// Enough of core for well-formed http(s) URLs: returns them unchanged, and
+	// '' for a disallowed scheme.
+	function esc_url_raw( $url, $protocols = null ) {
+		unset( $protocols );
+		$url = trim( (string) $url );
+		if ( '' === $url ) {
+			return '';
+		}
+		if ( preg_match( '#^([a-z][a-z0-9+.-]*):#i', $url, $m ) && ! in_array( strtolower( $m[1] ), array( 'http', 'https' ), true ) ) {
+			return '';
+		}
+		return str_replace( ' ', '%20', $url );
+	}
+}
+
+if ( ! function_exists( 'wp_timezone' ) ) {
+	// Mirrors core: timezone_string when set, else the gmt_offset as +HH:MM.
+	function wp_timezone() {
+		$tz = (string) get_option( 'timezone_string', '' );
+		if ( '' !== $tz ) {
+			return new DateTimeZone( $tz );
+		}
+		$offset  = (float) get_option( 'gmt_offset', 0 );
+		$hours   = (int) $offset;
+		$minutes = abs( ( $offset - $hours ) * 60 );
+		return new DateTimeZone( sprintf( '%s%02d:%02d', $offset < 0 ? '-' : '+', abs( $hours ), $minutes ) );
+	}
+}
+
 require_once __DIR__ . '/../includes/class-webhook.php';
 require_once __DIR__ . '/../includes/class-plugin.php';
 require_once __DIR__ . '/../includes/class-admin.php';
 require_once __DIR__ . '/../includes/class-logger.php';
+require_once __DIR__ . '/../includes/class-payload.php';
+require_once __DIR__ . '/../includes/class-ajax.php';
+require_once __DIR__ . '/../includes/class-integration.php';
 
 require_once __DIR__ . '/../includes/class-pro-pointer.php';
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
@@ -246,3 +411,4 @@ if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 }
 
 require_once __DIR__ . '/wp-objects.php';
+require_once __DIR__ . '/doubles.php';

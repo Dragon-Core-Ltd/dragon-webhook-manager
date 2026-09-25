@@ -70,5 +70,34 @@ final class PluginUpgradeTest extends TestCase {
 		$this->migrate();
 
 		$this->assertSame( '45', get_option( 'dwm_default_timeout' ), 'legacy value survives a failed copy for the next attempt' );
+		$this->assertFalse( get_option( 'dragonwebhookmanager_legacy_migrated' ), 'the next request tries again' );
+	}
+
+	public function test_absent_legacy_db_version_is_not_deleted_on_every_request(): void {
+		$GLOBALS['dragonwebhookmanager_test_deleted_options'] = array();
+
+		$this->migrate();
+
+		$this->assertNotContains( 'dwm_db_version', $GLOBALS['dragonwebhookmanager_test_deleted_options'] );
+	}
+
+	public function test_present_legacy_db_version_is_removed(): void {
+		$GLOBALS['dragonwebhookmanager_test_options']['dwm_db_version'] = '1.0.3';
+
+		$this->migrate();
+
+		$this->assertFalse( get_option( 'dwm_db_version' ) );
+	}
+
+	public function test_a_completed_migration_is_not_rerun(): void {
+		$this->migrate();
+		$this->assertNotFalse( get_option( 'dragonwebhookmanager_legacy_migrated' ) );
+
+		// Anything legacy that appears later is left alone: no lookups per request.
+		$GLOBALS['dragonwebhookmanager_test_options']['dwm_default_timeout'] = '45';
+		$this->migrate();
+
+		$this->assertSame( '45', get_option( 'dwm_default_timeout' ) );
+		$this->assertFalse( get_option( 'dragonwebhookmanager_default_timeout' ) );
 	}
 }
