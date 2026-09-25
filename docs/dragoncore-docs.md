@@ -19,7 +19,7 @@ Every variable the payload fills, by the triggers that fill it (the edit screen 
 
 A placeholder a trigger does not fill, and that no add-on fills, is left in the body as written.
 
-**Test sends.** The sample post has no author and the sample comment belongs to no post, so a real account or post never ends up in a test delivery. In a test, `{{post_author_name}}`, `{{post_author_email}}`, `{{comment_post_title}}` and `{{comment_post_url}}` are empty, and `{{post_author_id}}` and `{{comment_post_id}}` are `0`. `{{post_url}}` is built from the sample post ID (123), so it does not open the sample post. The global variables hold this site's real values; every other variable holds a sample value. A triggered delivery fills all of them from the real post, user or comment.
+**Test sends.** The sample post has no author and the sample comment belongs to no post, so a real account or post never ends up in a test delivery. In a test, `{{post_author_name}}`, `{{post_author_email}}`, `{{comment_post_title}}` and `{{comment_post_url}}` are empty, and `{{post_author_id}}` and `{{comment_post_id}}` are `0`. `{{post_url}}` is a placeholder URL that does not open a real post. The global variables hold this site's real values; every other variable holds a sample value. A triggered delivery fills all of them from the real post, user or comment.
 
 ## Settings
 **Tools → Webhook Manager → Settings**:
