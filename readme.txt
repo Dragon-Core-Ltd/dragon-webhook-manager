@@ -4,7 +4,7 @@ Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.16
+Stable tag: 1.0.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -122,6 +122,11 @@ The plugin works alongside WooCommerce but ships no WooCommerce-specific trigger
 
 == Changelog ==
 
+= 1.0.17 =
+* Fixed: Comment Submitted and Comment Approved fired for WooCommerce order notes and other internal records. They now fire for comments and product reviews; change this with the dragonwebhookmanager_comment_types filter.
+* Log rows always finish, even with unusual response bodies, and the Logs tab is paginated.
+* Deleting a webhook tells add-ons, so Pro removes its secret and pending retries.
+
 = 1.0.16 =
 * Fixed: PUT and PATCH webhooks are saved with their method.
 * Fixed: templates keep their backslashes, so saved payloads stay valid JSON.
@@ -215,6 +220,9 @@ Dragon Webhook Manager sends data from your WordPress site to external URLs that
 For more information, visit [Dragon Core](https://dragoncore.ltd/).
 
 == Upgrade Notice ==
+
+= 1.0.17 =
+Comment webhooks no longer fire for WooCommerce order notes.
 
 = 1.0.16 =
 Webhook fixes for methods, templates and test sends.
