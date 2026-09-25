@@ -4,7 +4,7 @@ Tags: webhooks, automation, notifications, api, integration
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.15
+Stable tag: 1.0.16
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,14 @@ The plugin works alongside WooCommerce but ships no WooCommerce-specific trigger
 
 == Changelog ==
 
+= 1.0.16 =
+* Fixed: PUT and PATCH webhooks are saved with their method.
+* Fixed: templates keep their backslashes, so saved payloads stay valid JSON.
+* Test sends and retries use the same signing and headers as real deliveries.
+* Post triggers skip internal post types such as templates.
+* Internal network addresses are refused when saving.
+* {{trigger_event}} is now a real variable, and delivery log times show correctly on every server.
+
 = 1.0.15 =
 * Fixed: the plugin now runs the template-variable filters, so Dragon Webhook Manager Pro's WooCommerce placeholders are listed and filled.
 * Fixed: test sends fill post, user and comment variables with sample data.
@@ -203,6 +211,9 @@ Dragon Webhook Manager sends data from your WordPress site to external URLs that
 For more information, visit [Dragon Core](https://dragoncore.ltd/).
 
 == Upgrade Notice ==
+
+= 1.0.16 =
+Webhook fixes for methods, templates and test sends.
 
 = 1.0.15 =
 WooCommerce placeholders from Pro now fill in, and test sends fill every variable.
