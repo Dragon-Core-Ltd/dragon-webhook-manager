@@ -36,6 +36,14 @@ class FakeWpdb {
 	public bool $fail_writes = false;
 
 	/**
+	 * Substrings a write refuses, standing in for values the column charset
+	 * cannot hold (for example a 4-byte character in a utf8mb3 table).
+	 *
+	 * @var string[]
+	 */
+	public array $refuse = array();
+
+	/**
 	 * Every read/query the code under test issued, decoded to q/a.
 	 *
 	 * @var array<int, array>
@@ -76,6 +84,18 @@ class FakeWpdb {
 		$this->queries[] = $p;
 		$q = $p['q'];
 		$a = $p['a'];
+
+		if ( 'SELECT COUNT(*) FROM %i' === $q ) {
+			return (string) count( $this->rows[ $a[0] ] ?? array() );
+		}
+
+		if ( 'SELECT COUNT(*) FROM %i WHERE webhook_id = %d' === $q ) {
+			$n = 0;
+			foreach ( $this->rows[ $a[0] ] ?? array() as $row ) {
+				$n += (int) ( $row['webhook_id'] ?? 0 ) === (int) $a[1] ? 1 : 0;
+			}
+			return (string) $n;
+		}
 
 		if ( str_starts_with( $q, 'SHOW TABLES LIKE' ) ) {
 			$name = stripcslashes( (string) $a[0] );
@@ -119,8 +139,29 @@ class FakeWpdb {
 		return null;
 	}
 
+	/**
+	 * Mirrors wpdb::process_fields(): a value that is not valid UTF-8, or that
+	 * the column charset cannot store, makes the whole write fail.
+	 */
+	private function refuses( array $data ): bool {
+		foreach ( $data as $value ) {
+			if ( ! is_string( $value ) ) {
+				continue;
+			}
+			if ( 1 !== preg_match( '//u', $value ) ) {
+				return true;
+			}
+			foreach ( $this->refuse as $needle ) {
+				if ( str_contains( $value, $needle ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	public function insert( string $table, array $data, $format = null ) {
-		if ( $this->fail_writes ) {
+		if ( $this->fail_writes || $this->refuses( $data ) ) {
 			return false;
 		}
 		$data['id']              = $this->next_id++;
@@ -130,7 +171,7 @@ class FakeWpdb {
 	}
 
 	public function update( string $table, array $data, array $where, $format = null, $where_format = null ) {
-		if ( $this->fail_writes ) {
+		if ( $this->fail_writes || $this->refuses( $data ) ) {
 			return false;
 		}
 		$n = 0;
@@ -147,6 +188,9 @@ class FakeWpdb {
 	}
 
 	public function delete( string $table, array $where, $format = null ) {
+		if ( $this->fail_writes ) {
+			return false;
+		}
 		$n = 0;
 		foreach ( $this->rows[ $table ] ?? array() as $i => $row ) {
 			foreach ( $where as $k => $v ) {

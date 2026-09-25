@@ -157,6 +157,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php endif; ?>
 		</tbody>
 	</table>
+
+	<?php if ( $dragonwebhookmanager_pagination['pages'] > 1 ) : ?>
+		<div class="tablenav bottom">
+			<div class="tablenav-pages">
+				<?php
+				echo wp_kses_post(
+					(string) paginate_links(
+						array(
+							'base'    => add_query_arg( 'paged', '%#%' ),
+							'format'  => '',
+							'current' => $dragonwebhookmanager_pagination['page'],
+							'total'   => $dragonwebhookmanager_pagination['pages'],
+						)
+					)
+				);
+				?>
+			</div>
+		</div>
+	<?php endif; ?>
 </div>
 
 <!-- Log Details Modal -->

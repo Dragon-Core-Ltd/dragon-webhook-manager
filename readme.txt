@@ -67,7 +67,7 @@ The free plugin is complete on its own: create as many webhooks as you need on e
 
 * **20+ WooCommerce triggers:**
   * Orders: created, paid, completed, cancelled, refunded
-  * Customers: registered, updated, deleted
+  * Customers: registered, updated
   * Products: low stock, out of stock, back in stock
   * Subscriptions: renewed, cancelled, expired
 * **Conditional logic** - Only send when order_total > $100
@@ -129,7 +129,7 @@ The plugin works alongside WooCommerce but ships no WooCommerce-specific trigger
 = 1.0.15 =
 * Fixed: the plugin now runs the template-variable filters, so Dragon Webhook Manager Pro's WooCommerce placeholders are listed and filled.
 * Fixed: test sends fill post, user and comment variables with sample data.
-* Fixed: delivery log times are stored in UTC, so they show correctly on every server.
+* Fixed: delivery log times are stored in UTC, so new entries show correctly on every server. Entries logged by 1.0.14 or earlier keep the database server's clock, so on a server not set to UTC they show shifted by its offset until log retention removes them.
 * The default template for new webhooks uses a real variable.
 * Every screen, email and alert is now translatable, and translations bundled in the plugin's languages folder now load. Counts use proper plural forms, and numbers and dates follow your site's language.
 

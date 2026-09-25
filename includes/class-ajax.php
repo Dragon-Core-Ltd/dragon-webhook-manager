@@ -130,6 +130,16 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'Failed to delete webhook.', 'dragon-webhook-manager' ) ) );
 		}
 
+		/**
+		 * Fires after a webhook and its delivery logs are deleted.
+		 *
+		 * Add-ons drop the per-webhook settings they keep under this ID, so a
+		 * later webhook that is given the same ID starts clean.
+		 *
+		 * @param int $id Deleted webhook ID.
+		 */
+		do_action( 'dragonwebhookmanager_webhook_deleted', $id );
+
 		wp_send_json_success( array( 'message' => __( 'Webhook deleted.', 'dragon-webhook-manager' ) ) );
 	}
 

@@ -16,6 +16,11 @@ class Admin {
 	 */
 	private const SETTINGS_GROUP = 'dragonwebhookmanager_settings';
 
+	/**
+	 * Delivery log rows per page on the Logs tab.
+	 */
+	private const LOGS_PER_PAGE = 100;
+
 	private Webhook $webhook;
 	private Logger $logger;
 
@@ -216,12 +221,39 @@ class Admin {
 	private function render_logs_page(): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter parameter; no state change.
 		$dragonwebhookmanager_webhook_id = isset( $_GET['webhook_id'] ) ? absint( $_GET['webhook_id'] ) : null;
-		$dragonwebhookmanager_logs       = self::with_details( $this->logger->get_logs( 100, 0, $dragonwebhookmanager_webhook_id ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page number; no state change.
+		$dragonwebhookmanager_requested  = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+		$dragonwebhookmanager_pagination = self::logs_pagination(
+			$dragonwebhookmanager_requested,
+			$this->logger->count_logs( $dragonwebhookmanager_webhook_id ),
+			self::LOGS_PER_PAGE
+		);
+		$dragonwebhookmanager_logs       = self::with_details( $this->logger->get_logs( self::LOGS_PER_PAGE, $dragonwebhookmanager_pagination['offset'], $dragonwebhookmanager_webhook_id ) );
 		$dragonwebhookmanager_stats      = $this->logger->get_stats();
 		$dragonwebhookmanager_webhooks   = $this->webhook->get_all();
 		$dragonwebhookmanager_triggers   = Triggers::get_triggers();
 
 		include DRAGONWEBHOOKMANAGER_PLUGIN_DIR . 'admin/views/logs.php';
+	}
+
+	/**
+	 * Page of the Logs tab to show, the page count and the row offset.
+	 *
+	 * @param int $requested Requested page number.
+	 * @param int $total     Number of log rows.
+	 * @param int $per_page  Rows per page.
+	 * @return array{page: int, pages: int, offset: int}
+	 */
+	public static function logs_pagination( int $requested, int $total, int $per_page ): array {
+		$per_page = max( 1, $per_page );
+		$pages    = max( 1, (int) ceil( max( 0, $total ) / $per_page ) );
+		$page     = min( max( 1, $requested ), $pages );
+
+		return array(
+			'page'   => $page,
+			'pages'  => $pages,
+			'offset' => ( $page - 1 ) * $per_page,
+		);
 	}
 
 	/**

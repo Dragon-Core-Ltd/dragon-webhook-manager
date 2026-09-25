@@ -32,6 +32,7 @@ if ( ! class_exists( 'WP_Post' ) ) {
 		public $post_title        = '';
 		public $post_excerpt      = '';
 		public $post_status       = 'publish';
+		public $post_password     = '';
 		public $post_name         = '';
 		public $post_parent       = 0;
 		public $post_modified     = '0000-00-00 00:00:00';
@@ -53,6 +54,8 @@ if ( ! class_exists( 'WP_Comment' ) ) {
 		public $comment_author       = '';
 		public $comment_author_email = '';
 		public $comment_author_url   = '';
+		public $comment_author_IP    = '';
+		public $comment_agent        = '';
 		public $comment_date         = '0000-00-00 00:00:00';
 		public $comment_content      = '';
 		public $comment_approved     = '1';

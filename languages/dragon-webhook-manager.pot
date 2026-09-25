@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-25T02:33:00+00:00\n"
+"POT-Creation-Date: 2026-09-25T07:43:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: dragon-webhook-manager\n"
@@ -17,8 +17,8 @@ msgstr ""
 #. Plugin Name of the plugin
 #: dragon-webhook-manager.php
 #: admin/views/dashboard.php:13
-#: includes/class-admin.php:33
-#: includes/class-admin.php:183
+#: includes/class-admin.php:38
+#: includes/class-admin.php:188
 msgid "Dragon Webhook Manager"
 msgstr ""
 
@@ -49,7 +49,7 @@ msgstr ""
 
 #: admin/views/dashboard.php:26
 #: admin/views/dashboard.php:40
-#: includes/class-admin.php:185
+#: includes/class-admin.php:190
 msgid "Webhooks"
 msgstr ""
 
@@ -69,7 +69,7 @@ msgstr ""
 #. translators: %s: duration in milliseconds.
 #: admin/views/dashboard.php:67
 #: admin/views/logs.php:39
-#: includes/class-admin.php:276
+#: includes/class-admin.php:308
 msgid "%s ms"
 msgstr ""
 
@@ -258,7 +258,7 @@ msgid "Test Result"
 msgstr ""
 
 #: admin/views/edit.php:252
-#: admin/views/logs.php:189
+#: admin/views/logs.php:208
 msgid "Close"
 msgstr ""
 
@@ -280,7 +280,7 @@ msgid "Successful"
 msgstr ""
 
 #: admin/views/logs.php:31
-#: includes/class-admin.php:290
+#: includes/class-admin.php:322
 msgid "Failed"
 msgstr ""
 
@@ -309,7 +309,7 @@ msgid "Webhook"
 msgstr ""
 
 #: admin/views/logs.php:78
-#: admin/views/logs.php:177
+#: admin/views/logs.php:196
 msgid "Response"
 msgstr ""
 
@@ -350,45 +350,45 @@ msgstr ""
 msgid "View delivery details"
 msgstr ""
 
-#: admin/views/logs.php:165
+#: admin/views/logs.php:184
 msgid "Delivery Details"
 msgstr ""
 
-#: admin/views/logs.php:168
+#: admin/views/logs.php:187
 msgid "Request"
 msgstr ""
 
-#: admin/views/logs.php:169
+#: admin/views/logs.php:188
 msgid "URL:"
 msgstr ""
 
-#: admin/views/logs.php:170
+#: admin/views/logs.php:189
 msgid "Method:"
 msgstr ""
 
-#: admin/views/logs.php:171
+#: admin/views/logs.php:190
 msgid "Headers:"
 msgstr ""
 
-#: admin/views/logs.php:173
-#: admin/views/logs.php:181
+#: admin/views/logs.php:192
+#: admin/views/logs.php:200
 msgid "Body:"
 msgstr ""
 
-#: admin/views/logs.php:178
+#: admin/views/logs.php:197
 msgid "Status:"
 msgstr ""
 
-#: admin/views/logs.php:179
-#: includes/class-admin.php:125
+#: admin/views/logs.php:198
+#: includes/class-admin.php:130
 msgid "Duration:"
 msgstr ""
 
-#: admin/views/logs.php:180
+#: admin/views/logs.php:199
 msgid "Error:"
 msgstr ""
 
-#: admin/views/logs.php:185
+#: admin/views/logs.php:204
 msgid "Additional Details"
 msgstr ""
 
@@ -428,106 +428,106 @@ msgstr ""
 msgid "Leave unchecked to keep your data so a reinstall picks up where you left off."
 msgstr ""
 
-#: includes/class-admin.php:34
+#: includes/class-admin.php:39
 msgid "Webhook Manager"
 msgstr ""
 
-#: includes/class-admin.php:112
+#: includes/class-admin.php:117
 msgid "Are you sure you want to delete this webhook?"
 msgstr ""
 
-#: includes/class-admin.php:113
+#: includes/class-admin.php:118
 msgid "Are you sure you want to clear all logs?"
 msgstr ""
 
-#: includes/class-admin.php:114
+#: includes/class-admin.php:119
 #: includes/class-ajax.php:102
 msgid "Webhook saved successfully."
 msgstr ""
 
-#: includes/class-admin.php:115
-#: includes/class-ajax.php:133
+#: includes/class-admin.php:120
+#: includes/class-ajax.php:143
 msgid "Webhook deleted."
 msgstr ""
 
-#: includes/class-admin.php:116
-#: includes/class-ajax.php:162
+#: includes/class-admin.php:121
+#: includes/class-ajax.php:172
 msgid "Webhook status updated."
 msgstr ""
 
-#: includes/class-admin.php:117
+#: includes/class-admin.php:122
 msgid "Test webhook sent."
 msgstr ""
 
-#: includes/class-admin.php:118
-#: includes/class-ajax.php:339
+#: includes/class-admin.php:123
+#: includes/class-ajax.php:349
 msgid "Logs cleared."
 msgstr ""
 
-#: includes/class-admin.php:119
+#: includes/class-admin.php:124
 msgid "An error occurred."
 msgstr ""
 
-#: includes/class-admin.php:120
+#: includes/class-admin.php:125
 msgid "Saving..."
 msgstr ""
 
-#: includes/class-admin.php:121
+#: includes/class-admin.php:126
 msgid "Testing..."
 msgstr ""
 
-#: includes/class-admin.php:122
+#: includes/class-admin.php:127
 msgid "Success!"
 msgstr ""
 
-#: includes/class-admin.php:123
+#: includes/class-admin.php:128
 msgid "Failed:"
 msgstr ""
 
-#: includes/class-admin.php:124
+#: includes/class-admin.php:129
 msgid "Response Code:"
 msgstr ""
 
-#: includes/class-admin.php:126
+#: includes/class-admin.php:131
 msgid "Response Body:"
 msgstr ""
 
-#: includes/class-admin.php:127
+#: includes/class-admin.php:132
 msgid "N/A"
 msgstr ""
 
 #. translators: %s: the template variable that was copied, such as {{post_title}}.
-#: includes/class-admin.php:129
+#: includes/class-admin.php:134
 msgid "Copied: %s"
 msgstr ""
 
 #. translators: %s: add-on supplied detail label in the delivery details modal.
-#: includes/class-admin.php:131
+#: includes/class-admin.php:136
 msgid "%s:"
 msgstr ""
 
-#: includes/class-admin.php:139
+#: includes/class-admin.php:144
 msgid "You do not have permission to access this page."
 msgstr ""
 
-#: includes/class-admin.php:259
+#: includes/class-admin.php:291
 msgid "[redacted]"
 msgstr ""
 
-#: includes/class-admin.php:289
+#: includes/class-admin.php:321
 msgid "Success"
 msgstr ""
 
-#: includes/class-admin.php:291
+#: includes/class-admin.php:323
 msgid "Pending"
 msgstr ""
 
 #: includes/class-ajax.php:38
 #: includes/class-ajax.php:115
-#: includes/class-ajax.php:143
-#: includes/class-ajax.php:175
-#: includes/class-ajax.php:261
-#: includes/class-ajax.php:325
+#: includes/class-ajax.php:153
+#: includes/class-ajax.php:185
+#: includes/class-ajax.php:271
+#: includes/class-ajax.php:335
 msgid "Permission denied."
 msgstr ""
 
@@ -553,7 +553,7 @@ msgid "Failed to create webhook."
 msgstr ""
 
 #: includes/class-ajax.php:121
-#: includes/class-ajax.php:149
+#: includes/class-ajax.php:159
 msgid "Invalid webhook ID."
 msgstr ""
 
@@ -561,47 +561,47 @@ msgstr ""
 msgid "Failed to delete webhook."
 msgstr ""
 
-#: includes/class-ajax.php:155
+#: includes/class-ajax.php:165
 msgid "Failed to toggle webhook."
 msgstr ""
 
-#: includes/class-ajax.php:192
+#: includes/class-ajax.php:202
 msgid "That URL could not be used. Enter a full https:// address."
 msgstr ""
 
-#: includes/class-ajax.php:219
+#: includes/class-ajax.php:229
 msgid "URL is required."
 msgstr ""
 
-#: includes/class-ajax.php:234
+#: includes/class-ajax.php:244
 msgid "Test webhook sent successfully!"
 msgstr ""
 
-#: includes/class-ajax.php:244
+#: includes/class-ajax.php:254
 msgid "Webhook delivery failed."
 msgstr ""
 
-#: includes/class-ajax.php:269
+#: includes/class-ajax.php:279
 msgid "Log not found."
 msgstr ""
 
-#: includes/class-ajax.php:275
+#: includes/class-ajax.php:285
 msgid "Webhook not found."
 msgstr ""
 
-#: includes/class-ajax.php:281
+#: includes/class-ajax.php:291
 msgid "This log entry has no stored request, so it cannot be resent. Use Test on the webhook instead."
 msgstr ""
 
-#: includes/class-ajax.php:304
+#: includes/class-ajax.php:314
 msgid "Retry successful!"
 msgstr ""
 
-#: includes/class-ajax.php:311
+#: includes/class-ajax.php:321
 msgid "Retry failed."
 msgstr ""
 
-#: includes/class-ajax.php:329
+#: includes/class-ajax.php:339
 msgid "The logs could not be cleared. Check the database error log."
 msgstr ""
 

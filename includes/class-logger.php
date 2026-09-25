@@ -76,7 +76,21 @@ class Logger {
 	}
 
 	/**
-	 * Complete a log entry (after delivery)
+	 * Complete a log entry (after delivery).
+	 *
+	 * Text is made valid UTF-8 first: a response body cut at the size cap can
+	 * end inside a character, and a Latin-1 body is not UTF-8 at all, and
+	 * wpdb refuses the whole update for either. If the database still refuses
+	 * the text (a character the table's charset cannot hold), the outcome is
+	 * written without it rather than leaving the row pending.
+	 *
+	 * @param int    $log_id        Log ID.
+	 * @param string $status        success or failed.
+	 * @param int    $response_code HTTP status, 0 when there was no response.
+	 * @param string $response_body Response body.
+	 * @param int    $duration_ms   Request duration.
+	 * @param string $error_message Error message.
+	 * @return bool Whether the outcome was written.
 	 */
 	public function log_complete(
 		int $log_id,
@@ -85,23 +99,72 @@ class Logger {
 		string $response_body,
 		int $duration_ms,
 		string $error_message = ''
-	): void {
+	): bool {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to plugin's custom table.
-		$wpdb->update(
-			$this->table,
-			array(
-				'status'        => $status,
-				'response_code' => $response_code,
-				'response_body' => $response_body,
-				'duration_ms'   => $duration_ms,
-				'error_message' => $error_message,
-			),
-			array( 'id' => $log_id ),
-			array( '%s', '%d', '%s', '%d', '%s' ),
-			array( '%d' )
+		$response_body = self::valid_utf8( $response_body );
+		$error_message = self::valid_utf8( $error_message );
+
+		$attempts = array(
+			array( $response_body, $error_message ),
+			array( '', $error_message ),
+			array( '', '' ),
 		);
+
+		foreach ( $attempts as $attempt ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to plugin's custom table.
+			$result = $wpdb->update(
+				$this->table,
+				array(
+					'status'        => $status,
+					'response_code' => $response_code,
+					'response_body' => $attempt[0],
+					'duration_ms'   => $duration_ms,
+					'error_message' => $attempt[1],
+				),
+				array( 'id' => $log_id ),
+				array( '%s', '%d', '%s', '%d', '%s' ),
+				array( '%d' )
+			);
+
+			if ( false !== $result ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Text as valid UTF-8, with each invalid byte sequence replaced by U+FFFD.
+	 *
+	 * @param string $text Text of unknown encoding.
+	 * @return string
+	 */
+	public static function valid_utf8( string $text ): string {
+		if ( '' === $text || 1 === preg_match( '//u', $text ) ) {
+			return $text;
+		}
+
+		return htmlspecialchars_decode( htmlspecialchars( $text, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8' ), ENT_NOQUOTES );
+	}
+
+	/**
+	 * Number of log rows, for one webhook or all.
+	 *
+	 * @param int|null $webhook_id Webhook ID, or null for every row.
+	 * @return int
+	 */
+	public function count_logs( ?int $webhook_id = null ): int {
+		global $wpdb;
+
+		if ( $webhook_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
+			return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE webhook_id = %d', $this->table, $webhook_id ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table read; results are always current.
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table ) );
 	}
 
 	/**

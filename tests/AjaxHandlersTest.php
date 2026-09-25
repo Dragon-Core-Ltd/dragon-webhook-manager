@@ -343,4 +343,23 @@ final class AjaxHandlersTest extends TestCase {
 		$this->assertFalse( $this->call( 'handle_clear_logs' )->success );
 		$this->assertNotContains( array( 'dragonwebhookmanager_logs_cleared' ), $GLOBALS['dragonwebhookmanager_test_actions'] );
 	}
+
+	public function test_delete_announces_the_deleted_webhook(): void {
+		$id    = $this->saved_webhook();
+		$_POST = array( 'id' => (string) $id );
+
+		$this->assertTrue( $this->call( 'handle_delete_webhook' )->success );
+
+		$this->assertContains( array( 'dragonwebhookmanager_webhook_deleted', $id ), $GLOBALS['dragonwebhookmanager_test_actions'] );
+	}
+
+	public function test_a_failed_delete_is_not_announced(): void {
+		$id                    = $this->saved_webhook();
+		$_POST                 = array( 'id' => (string) $id );
+		$this->db->fail_writes = true;
+
+		$this->assertFalse( $this->call( 'handle_delete_webhook' )->success );
+
+		$this->assertNotContains( array( 'dragonwebhookmanager_webhook_deleted', $id ), $GLOBALS['dragonwebhookmanager_test_actions'] );
+	}
 }
