@@ -240,6 +240,10 @@ class Triggers {
 	 * Handle comment submitted
 	 */
 	public function handle_comment_submitted( int $comment_id, \WP_Comment $comment ): void {
+		if ( ! self::fires_for_comment_type( (string) $comment->comment_type, 'comment_submitted' ) ) {
+			return;
+		}
+
 		$this->dispatch( 'comment_submitted', array( 'comment' => $comment ) );
 	}
 
@@ -252,7 +256,42 @@ class Triggers {
 			return;
 		}
 
+		if ( ! self::fires_for_comment_type( (string) $comment->comment_type, 'comment_approved' ) ) {
+			return;
+		}
+
 		$this->dispatch( 'comment_approved', array( 'comment' => $comment ) );
+	}
+
+	/**
+	 * Whether comments of a type fire the comment triggers.
+	 *
+	 * By default ordinary comments and WooCommerce product reviews do, so
+	 * records other plugins keep as comments (WooCommerce order notes, Action
+	 * Scheduler logs, webhook delivery logs) and pingbacks/trackbacks never
+	 * reach a webhook. A comment stored with an empty type is an ordinary comment.
+	 *
+	 * @param string $comment_type  Comment type.
+	 * @param string $trigger_event comment_submitted or comment_approved.
+	 * @return bool
+	 */
+	public static function fires_for_comment_type( string $comment_type, string $trigger_event ): bool {
+		$default = array( 'comment', 'review' );
+
+		/**
+		 * Filters the comment types whose comments fire the comment triggers.
+		 *
+		 * Add 'pingback', 'trackback' or 'review' to send webhooks for them.
+		 *
+		 * @param string[] $comment_types Comment type names. Default: array( 'comment' ).
+		 * @param string   $trigger_event comment_submitted or comment_approved.
+		 */
+		$comment_types = apply_filters( 'dragonwebhookmanager_comment_types', $default, $trigger_event );
+		if ( ! is_array( $comment_types ) ) {
+			$comment_types = $default;
+		}
+
+		return in_array( '' === $comment_type ? 'comment' : $comment_type, $comment_types, true );
 	}
 
 	/**

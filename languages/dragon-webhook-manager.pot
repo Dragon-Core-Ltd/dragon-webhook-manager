@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-25T07:43:12+00:00\n"
+"POT-Creation-Date: 2026-09-25T10:12:31+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: dragon-webhook-manager\n"
@@ -173,8 +173,8 @@ msgid "Edit Webhook"
 msgstr ""
 
 #: admin/views/edit.php:38
-#: includes/class-triggers.php:343
-#: includes/class-triggers.php:371
+#: includes/class-triggers.php:382
+#: includes/class-triggers.php:410
 msgid "Other"
 msgstr ""
 

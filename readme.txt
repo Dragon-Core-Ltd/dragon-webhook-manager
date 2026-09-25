@@ -112,6 +112,10 @@ Seven days by default. Change the retention period (1 to 365 days) and the deliv
 
 Post Published, Post Updated and Post Trashed fire for post types that can be viewed on the front end (posts, pages and public custom post types). Internal records WordPress stores as posts, such as templates, navigation menus and oEmbed caches, never fire them. To include a non-public custom post type, or silence one, use the `dragonwebhookmanager_post_types` filter.
 
+= Which comments fire the comment triggers? =
+
+Comment Submitted and Comment Approved fire for ordinary comments and WooCommerce product reviews. Records other plugins store as comments, such as WooCommerce order notes or Action Scheduler logs, never fire them, and neither do pingbacks and trackbacks. To change which comment types fire them (for example to add `pingback`), use the `dragonwebhookmanager_comment_types` filter.
+
 = Can I use this with WooCommerce? =
 
 The plugin works alongside WooCommerce but ships no WooCommerce-specific triggers of its own. Other plugins can register additional triggers through the `dragonwebhookmanager_triggers` filter; see the Pro Features section above for an add-on that does.
